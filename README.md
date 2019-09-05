@@ -13,7 +13,7 @@ system of equations: Lx = b where L is the [Laplacian matrix][lapmat].
 The algorithm works by deriving the canonical solution from the stationary
 state of the data collection process: Packets are generated at each node as an
 independent Bernoulli process, transmitted to neighbors according to [stochastic
-matrix][stomat] where P<sub>uv</sub> is directly propotional to w<sub>ub</sub>
+matrix][stomat] where P<sub>uv</sub> is directly propotional to w<sub>uv</sub>
 and sunk at sink node only. Naturally, it consists of two phases: find parameter
 &beta; such that DCP is ergodic and compute the stationary state, compute the
 canonical solution by choosing an appropriate constant offset.
@@ -63,8 +63,8 @@ end
 ```
 
 ### Offset for canonical solution
-The solution to Lx=b satisfies <<Lx, 1>> = 0 as \lam1 = 0, so we need to have an
-offset for stationary state such that this holds.
+The solution to Lx=b satisfies <<Lx, 1>> = 0 as &lambda;<sub>1</sub> = 0,
+so we need to have an offset for stationary state such that this holds.
 
 ```
 func computeCanonicalSolution(eta, beta, D, b):
