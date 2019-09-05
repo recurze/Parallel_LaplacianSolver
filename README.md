@@ -2,27 +2,27 @@
 This repository will contain the implementation of the algorithm presented in
 [this paper][paper]. The paper describes a random walk based method to solve an
 important class of Laplacian Systems (Lx = b), called "one-sink" systems,
-where exactly one of the coordinates of **b** is negative.
+where exactly one of the coordinates of b is negative.
 
 ## Problem Statement
 You are given an undirected positive weighted connected graph G = (V, E, w) with
-adjacency matrix A\_uv = w(u, v). You are required to solve the system of
-equations: Lx = b where L is the [Laplacian matrix][lapmat].
+adjacency matrix A<sub>uv</sub> = w<sub>uv</sub>. You are required to solve the
+system of equations: Lx = b where L is the [Laplacian matrix][lapmat].
 
 ## Algorithm
 The algorithm works by deriving the canonical solution from the stationary
 state of the data collection process: Packets are generated at each node as an
 independent Bernoulli process, transmitted to neighbors according to [stochastic
-matrix][stomat] where P\_uv is directly propotional to w(u, v) and sunk at sink
-node only. Naturally, it consists of two phases: find parameter beta such that
-DCP is ergodic and compute the stationary state, compute the canonical solution
-by choosing an appropriate constant offset.
+matrix][stomat] where P<sub>uv</sub> is directly propotional to w<sub>ub</sub>
+and sunk at sink node only. Naturally, it consists of two phases: find parameter
+&beta; such that DCP is ergodic and compute the stationary state, compute the
+canonical solution by choosing an appropriate constant offset.
 
 ### Computing beta and stationary state
-We have a lower limit for \beta\* below which it's ergodic, so we binary
-search this lower limit. Whenever it's not ergodic, there's one \eta (queue
+We have a lower limit for &beta;\* below which it's ergodic, so we binary
+search this lower limit. Whenever it's not ergodic, there's one &eta; (queue
 occupancy probability) which reaches 1, so we simply simulate the DCP at each
-\beta and check for this condition.
+&beta; and check for this condition.
 
 ```
 func estimateQueueOccupancyProbability(P, beta, J, T_mix, T_samp):
