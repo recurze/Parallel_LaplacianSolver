@@ -1,15 +1,15 @@
-#Parallel Laplacian Solver using Random Walk
+# Parallel Laplacian Solver using Random Walk
 This repository will contain the implementation of the algorithm presented in
 [this paper][paper]. The paper describes a random walk based method to solve an
 important class of Laplacian Systems (Lx = b), called "one-sink" systems,
 where exactly one of the coordinates of **b** is negative.
 
-##Problem Statement
+## Problem Statement
 You are given an undirected positive weighted connected graph G = (V, E, w) with
 adjacency matrix A\_uv = w(u, v). You are required to solve the system of
 equations: Lx = b where L is the [Laplacian matrix][lapmat].
 
-##Algorithm
+## Algorithm
 The algorithm works by deriving the canonical solution from the stationary
 state of the data collection process: Packets are generated at each node as an
 independent Bernoulli process, transmitted to neighbors according to [stochastic
@@ -18,7 +18,7 @@ node only. Naturally, it consists of two phases: find parameter beta such that
 DCP is ergodic and compute the stationary state, compute the canonical solution
 by choosing an appropriate constant offset.
 
-###Computing beta and stationary state
+### Computing beta and stationary state
 We have a lower limit for \beta\* below which it's ergodic, so we binary
 search this lower limit. Whenever it's not ergodic, there's one \eta (queue
 occupancy probability) which reaches 1, so we simply simulate the DCP at each
@@ -62,7 +62,7 @@ begin
 end
 ```
 
-###Offset for canonical solution
+### Offset for canonical solution
 The solution to Lx=b satisfies <<Lx, 1>> = 0 as \lam1 = 0, so we need to have an
 offset for stationary state such that this holds.
 
@@ -83,7 +83,7 @@ end
 
 ---
 
-##TODO
+## TODO
 * Implement these sequentially first.
 * Parallel implementation for a k-core machine requires graph partioning. How
   to?
