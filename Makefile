@@ -8,7 +8,7 @@ TARGET := main
 SOURCES := $(wildcard ${SDIR}/*.cpp)
 OBJECTS := $(patsubst $(SDIR)/%, $(ODIR)/%, $(SOURCES:.cpp=.o))
 
-CFLAGS := -std=c++14 -Wall -Ofast -march=native
+CFLAGS := -std=c++14 -Wall
 
 INC := -I $(IDIR)
 
