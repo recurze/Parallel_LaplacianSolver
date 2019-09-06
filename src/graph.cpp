@@ -38,7 +38,7 @@ Graph::Graph(int _n, double **_A): n(_n) {
     }
 }
 
-void Graph::copyDegreeMatrix(double **_D) {
+void Graph::copyDegreeMatrix(double **_D) const {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             _D[i][j] = 0;
@@ -47,7 +47,7 @@ void Graph::copyDegreeMatrix(double **_D) {
     }
 }
 
-void Graph::copyLaplacianMatrix(double **_L) {
+void Graph::copyLaplacianMatrix(double **_L) const {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             _L[i][j] = L[i][j];
@@ -55,7 +55,7 @@ void Graph::copyLaplacianMatrix(double **_L) {
     }
 }
 
-void Graph::copyAdjacencyMatrix(double **_A) {
+void Graph::copyAdjacencyMatrix(double **_A) const {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             _A[i][j] = A[i][j];
@@ -63,7 +63,7 @@ void Graph::copyAdjacencyMatrix(double **_A) {
     }
 }
 
-void Graph::copyTransitionMatrix(double **_P) {
+void Graph::copyTransitionMatrix(double **_P) const {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             _P[i][j] = P[i][j];
