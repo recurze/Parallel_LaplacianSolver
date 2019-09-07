@@ -5,6 +5,8 @@ class Graph {
 public:
     Graph(int _n);
     Graph(int _n, double **_A);
+    ~Graph();
+
     int getNumVertex() const { return n; }
     void copyDegreeMatrix(double **_D) const;
     void copyLaplacianMatrix(double **_L) const;
