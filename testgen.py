@@ -68,8 +68,8 @@ if __name__ == "__main__":
     with open(ifname, 'w') as f:
         print(n, file=f)
         for i in range(n):
-            for x in A[i]:
-                print(x, end = " ", file = f)
+            for j in range(n):
+                print(A[i][j], end = " " if j < n - 1 else '', file = f)
             print("", file = f)
-        for x in b:
-            print(x, end = " ", file = f)
+        for i in range(n):
+            print(b[i], end = " " if i < n - 1 else '', file = f)
