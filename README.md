@@ -81,6 +81,28 @@ end
 * Refer to the paper for a detailed analysis and description of the algorithm
   regarding constants.
 
+
+## IO format
+The input will be of the following format
+
+```
+The first line in the file is a single integer n, denoting the number of nodes
+The following n lines will have n space seperated real numbers, the Adjacency
+matrix in row-major format
+The final line will have n space seperated real numbers, the b in Lx=b
+
+A[i][i] = 0
+A[i][j] = A[j][i] >= 0
+b[n] = sum(b[1..n-1])
+```
+
+The output should be of the following format:
+
+```
+Print one and only line containing n space seperated real numbers, the solution
+to Lx=b
+```
+
 ---
 
 ## TODO
