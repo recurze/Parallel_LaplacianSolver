@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 
-void in(const char *fname, Graph *g, double *b);
+void in(const char *fname, Graph **g, double **b);
 void out(const char *fname, int n, double *x);
 
 int main(int argc, char **argv) {
@@ -18,10 +18,10 @@ int main(int argc, char **argv) {
     Graph *g = NULL;
     double *b = NULL;
     char *ifname = argv[1];
-    in(ifname, g, b);
+    in(ifname, &g, &b);
 
     double *x = NULL;
-    Lsolver().solve(g, b, x);
+    Lsolver().solve(g, b, &x);
 
     delete[] b; b = NULL;
 
@@ -40,7 +40,7 @@ const double EPS = 1e-6;
 
 bool isSymmetric(int n, double **A) {
     for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
             if (fabs(A[i][j] - A[j][i]) > EPS) {
                 return false;
             }
@@ -51,7 +51,7 @@ bool isSymmetric(int n, double **A) {
 
 bool isPositiveWeighted(int n, double **A) {
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++i) {
+        for (int j = 0; j < n; ++j) {
             if (A[i][j] < 0) {
                 return false;
             }
@@ -84,7 +84,7 @@ void checkValidb(int n, double *b) {
     assert(fabs(b[n - 1]) > EPS);
 }
 
-void in(const char *fname, Graph *g, double *b) {
+void in(const char *fname, Graph **g, double **b) {
     std::ifstream infile(fname);
 
     int n;
@@ -99,13 +99,13 @@ void in(const char *fname, Graph *g, double *b) {
         }
     }
     checkValidGraph(n, A);
-    g = new Graph(n, A);
+    *g = new Graph(n, A);
 
-    b = new double[n];
+    *b = new double[n];
     for (int i = 0; i < n; ++i) {
-        infile >> b[i];
+        infile >> (*b)[i];
     }
-    checkValidb(n, b);
+    checkValidb(n, *b);
 }
 
 void out(const char *fname, int n, double *x) {

@@ -5,9 +5,9 @@
 #include <cassert>
 #include <algorithm>
 
-void Lsolver::solve(const Graph *g, const double *b, double *x) {
+void Lsolver::solve(const Graph *g, const double *b, double **x) {
     double *eta = NULL;
-    auto beta = computeStationaryState(g, b, eta);
+    auto beta = computeStationaryState(g, b, &eta);
 
     computeCanonicalSolution(g, b, eta, beta, x);
 
@@ -38,14 +38,6 @@ T sum(int n, T *a) {
         sum_a += a[i];
     }
     return sum_a;
-}
-
-template <typename T>
-void init2dMatrix(T **P, int n, int m) {
-    P = new T*[n];
-    for (int i = 0; i < n; ++i) {
-        P[i] = new T[m];
-    }
 }
 
 template <typename T>
@@ -86,7 +78,7 @@ int pickNeighbor(int n, double *P) {
 
 void Lsolver::estimateQueueOccupancyProbability(
         int n, double **P, double beta,
-        const double *J, double T_samp, double *eta) {
+        const double *J, double T_samp, double **eta) {
 
     rng.seed(std::random_device{}());
 
@@ -95,8 +87,9 @@ void Lsolver::estimateQueueOccupancyProbability(
 
     std::fill(Q, Q + n, 0);
     std::fill(nQ, nQ + n, 0);
-    std::fill(eta, eta + n, 0.0);
+    std::fill(*eta, *eta + n, 0.0);
 
+    int T = 0;
     bool converged = false;
     bool completed = false;
     do {
@@ -117,32 +110,36 @@ void Lsolver::estimateQueueOccupancyProbability(
         if (not converged) {
             int c = 0;
             for (int i = 0; i < n - 1; ++i) {
-                c += (Q[i] != nQ[i]);
+                if (Q[i] != nQ[i]) {
+                    ++c;
+                }
             }
             converged = (c < 0.1*n);
         }
         copy1d(nQ, Q, n);
 
         if (converged) {
-            T_samp -= 1;
+            ++T;
             for (int i = 0; i < n - 1; ++i) {
-                eta[i] += (Q[i] > 0);
+                if (Q[i] > 0) {
+                    (*eta)[i] += 1;
+                }
             }
-            completed = (T_samp < 0);
+            completed = (T > T_samp);
         }
+
     } while (!completed);
 
     delete[]  Q;
     delete[] nQ;
 
     for (int i = 0; i < n; ++i) {
-        eta[i] /= T_samp;
+        (*eta)[i] /= T_samp;
     }
-    assert(eta[n - 1] == 0);
 }
 
 double Lsolver::computeStationaryState(
-        const Graph *g, const double *b, double *eta) {
+        const Graph *g, const double *b, double **eta) {
     int n = g->getNumVertex();
 
     auto T_samp = 4*log(n) / (k*k*e2*e2);
@@ -150,17 +147,22 @@ double Lsolver::computeStationaryState(
     double *J = new double[n];
     computeJ(n, b, J);
 
-    double **P = NULL;
-    init2dMatrix(P, n, n);
+    double **P = new double*[n];
+    for (int i = 0; i < n; ++i) {
+        P[i] = new double[n];
+    }
     g->copyTransitionMatrix(P);
 
-    double beta = 1;
-    eta = new double[n];
+    double beta = 1, mx;
+    *eta = new double[n];
     do {
         beta /= 2;
         assert(beta > 0);
+
         estimateQueueOccupancyProbability(n, P, beta, J, T_samp, eta);
-    } while (max(n, eta) < 0.75 * (1 - e1 - e2));
+
+        mx = max(n, *eta);
+    } while (mx > 0.75 * (1 - e1 - e2));
 
     del(P, n);
     delete[] J; J = NULL;
@@ -178,7 +180,7 @@ double Lsolver::computeZstar(int n, const double *eta, const double *d) {
 
 void Lsolver::computeCanonicalSolution(
         const Graph *g, const double *b,
-        double *eta, double beta, double *x) {
+        double *eta, double beta, double **x) {
     int n = g->getNumVertex();
 
     double* d = new double[n];
@@ -188,8 +190,8 @@ void Lsolver::computeCanonicalSolution(
 
     auto sum_d = sum(n, d);
 
-    x = new double[n];
+    *x = new double[n];
     for (int i = 0; i < n; ++i) {
-        x[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar*(d[i]/sum_d));
+        (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar*(d[i]/sum_d));
     }
 }
