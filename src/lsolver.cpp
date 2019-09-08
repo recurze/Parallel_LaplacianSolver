@@ -56,7 +56,7 @@ void del(T **P, int n) {
 }
 
 template <typename T>
-void copy(int n, T *orig, T *copy) {
+void copy1d(T *orig, T *copy, int n) {
     for (int i = 0; i < n; ++i) {
         copy[i] = orig[i];
     }
@@ -76,19 +76,19 @@ int pickNeighbor(int n, double *P) {
     for (int i = 1; i < n; ++i) {
         prefix_P[i] = prefix_P[i - 1] + P[i];
     }
+
     auto x = std::upper_bound(prefix_P, prefix_P + n, dist(rng)) - prefix_P;
 
     delete[] prefix_P;
     return x;
 }
 
-// TODO: This is the main parallel function!
 void Lsolver::estimateQueueOccupancyProbability(
         int n, double **P, double beta,
         const double *J, double T_samp, double *eta) {
 
+    rng.seed(std::random_device{}());
 
-            rng.seed(std::random_device{}());
     int * Q = new int[n];
     int *nQ = new int[n];
 
@@ -99,7 +99,7 @@ void Lsolver::estimateQueueOccupancyProbability(
             Q[i] += generatePacket(beta * J[i]);
         }
 
-        copy(n, Q, nQ);
+        copy1d(Q, nQ, n);
 
         for (int i = 0; i < n; ++i) {
             if (Q[i] > 0) {
@@ -116,7 +116,7 @@ void Lsolver::estimateQueueOccupancyProbability(
             }
             converged = (c < 0.1*n);
         }
-        copy(n, nQ, Q);
+        copy1d(nQ, Q, n);
 
         if (converged) {
             T_samp -= 1;
@@ -169,8 +169,6 @@ double Lsolver::computeZstar(int n, const double *eta, const double *d) {
     return -zstar;
 }
 
-
-// Parallelize last for loop
 void Lsolver::computeCanonicalSolution(
         const Graph *g, const double *b,
         double *eta, double beta, double *x) {

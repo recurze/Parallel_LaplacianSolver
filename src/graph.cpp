@@ -38,40 +38,43 @@ Graph::Graph(int _n, double **_A): n(_n) {
 }
 
 Graph::~Graph() {
-    delete[] D;
     for (int i = 0; i < n; ++i) {
         delete[] A[i];
         delete[] P[i];
         delete[] L[i];
     }
+    delete[] D;
     delete[] A;
     delete[] P;
     delete[] L;
 }
 
-void Graph::copyDegreeMatrix(double *_D) const {
+template <typename T>
+void copy1d(T *orig, T *copy, int n) {
     for (int i = 0; i < n; ++i) {
-        _D[i] = D[i];
+        copy[i] = orig[i];
     }
 }
 
 template <typename T>
-void copy2dMatrix(T **original, T **copy, int n, int m) {
+void copy2d(T **orig, T **copy, int n, int m) {
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            copy[i][j] = original[i][j];
-        }
+        copy1d(orig[i], copy[i], m);
     }
 }
 
+void Graph::copyDegreeMatrix(double *_D) const {
+    copy1d(D, _D, n);
+}
+
 void Graph::copyLaplacianMatrix(double **_L) const {
-    copy2dMatrix(L, _L, n, n);
+    copy2d(L, _L, n, n);
 }
 
 void Graph::copyAdjacencyMatrix(double **_A) const {
-    copy2dMatrix(A, _A, n, n);
+    copy2d(A, _A, n, n);
 }
 
 void Graph::copyTransitionMatrix(double **_P) const {
-    copy2dMatrix(P, _P, n, n);
+    copy2d(P, _P, n, n);
 }
