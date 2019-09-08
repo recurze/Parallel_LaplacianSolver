@@ -3,15 +3,37 @@
 #include <cmath>
 #include <random>
 #include <cassert>
+#include <iostream>
 #include <algorithm>
+
+double computeError(const Graph *g, const double *b, double *x) {
+    int n = g->getNumVertex();
+    double **L = new double*[n];
+    for (int i = 0; i < n; ++i) {
+        L[i] = new double[n];
+    }
+    g->copyLaplacianMatrix(L);
+
+    double mse = 0;
+    for (int i = 0; i < n; ++i) {
+        double se = -b[i];
+        for (int j = 0; j < n; ++j) {
+            se += L[i][j] * x[j];
+        }
+        mse += (se * se);
+    }
+    return sqrt(mse/n);
+}
 
 void Lsolver::solve(const Graph *g, const double *b, double **x) {
     double *eta = NULL;
     auto beta = computeStationaryState(g, b, &eta);
 
     computeCanonicalSolution(g, b, eta, beta, x);
-
     delete[] eta; eta = NULL;
+
+    auto error = computeError(g, b, *x);
+    std::cout << "Beta: " << beta << "\nError: " << error << std::endl;
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
