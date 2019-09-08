@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <random>
+#include <cassert>
 #include <algorithm>
 
 void Lsolver::solve(const Graph *g, const double *b, double *x) {
@@ -92,16 +93,20 @@ void Lsolver::estimateQueueOccupancyProbability(
     int * Q = new int[n];
     int *nQ = new int[n];
 
+    std::fill(Q, Q + n, 0);
+    std::fill(nQ, nQ + n, 0);
+    std::fill(eta, eta + n, 0.0);
+
     bool converged = false;
     bool completed = false;
     do {
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n - 1; ++i) {
             Q[i] += generatePacket(beta * J[i]);
         }
 
         copy1d(Q, nQ, n);
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n - 1; ++i) {
             if (Q[i] > 0) {
                 auto v = pickNeighbor(n, P[i]);
                 --nQ[i];
@@ -111,7 +116,7 @@ void Lsolver::estimateQueueOccupancyProbability(
 
         if (not converged) {
             int c = 0;
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n - 1; ++i) {
                 c += (Q[i] != nQ[i]);
             }
             converged = (c < 0.1*n);
@@ -120,7 +125,7 @@ void Lsolver::estimateQueueOccupancyProbability(
 
         if (converged) {
             T_samp -= 1;
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n - 1; ++i) {
                 eta[i] += (Q[i] > 0);
             }
             completed = (T_samp < 0);
@@ -133,6 +138,7 @@ void Lsolver::estimateQueueOccupancyProbability(
     for (int i = 0; i < n; ++i) {
         eta[i] /= T_samp;
     }
+    assert(eta[n - 1] == 0);
 }
 
 double Lsolver::computeStationaryState(
@@ -152,6 +158,7 @@ double Lsolver::computeStationaryState(
     eta = new double[n];
     do {
         beta /= 2;
+        assert(beta > 0);
         estimateQueueOccupancyProbability(n, P, beta, J, T_samp, eta);
     } while (max(n, eta) < 0.75 * (1 - e1 - e2));
 

@@ -2,7 +2,7 @@
 #include "lsolver.h"
 
 #include <cmath>
-#include <chrono>
+#include <cassert>
 #include <fstream>
 #include <iostream>
 
@@ -36,11 +36,60 @@ int main(int argc, char **argv) {
     return 0;
 }
 
+const double EPS = 1e-6;
+
+bool isSymmetric(int n, double **A) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++i) {
+            if (fabs(A[i][j] - A[j][i]) > EPS) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool isPositiveWeighted(int n, double **A) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++i) {
+            if (A[i][j] < 0) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool noSelfLoops(int n, double **A) {
+    for (int i = 0; i < n; ++i) {
+        if (A[i][i] > EPS) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline void checkValidGraph(int n, double **A) {
+    assert(isSymmetric(n, A));
+    assert(isPositiveWeighted(n, A));
+    assert(noSelfLoops(n, A));
+}
+
+void checkValidb(int n, double *b) {
+    double s = 0;
+    for (int i = 0; i < n; ++i) {
+        s += b[i];
+    }
+    assert(fabs(s) < EPS);
+    assert(fabs(b[n - 1]) > EPS);
+}
+
 void in(const char *fname, Graph *g, double *b) {
     std::ifstream infile(fname);
 
     int n;
     infile >> n;
+    assert(n > 0);
 
     double **A = new double*[n];
     for (int i = 0; i < n; ++i) {
@@ -49,12 +98,14 @@ void in(const char *fname, Graph *g, double *b) {
             infile >> A[i][j];
         }
     }
+    checkValidGraph(n, A);
     g = new Graph(n, A);
 
     b = new double[n];
     for (int i = 0; i < n; ++i) {
         infile >> b[i];
     }
+    checkValidb(n, b);
 }
 
 void out(const char *fname, int n, double *x) {
