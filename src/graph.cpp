@@ -49,12 +49,9 @@ Graph::~Graph() {
     delete[] L;
 }
 
-void Graph::copyDegreeMatrix(double **_D) const {
+void Graph::copyDegreeMatrix(double *_D) const {
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            _D[i][j] = 0;
-        }
-        _D[i][i] = D[i];
+        _D[i] = D[i];
     }
 }
 

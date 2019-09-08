@@ -8,7 +8,7 @@ public:
     ~Graph();
 
     int getNumVertex() const { return n; }
-    void copyDegreeMatrix(double **_D) const;
+    void copyDegreeMatrix(double *_D) const;
     void copyLaplacianMatrix(double **_L) const;
     void copyAdjacencyMatrix(double **_A) const;
     void copyTransitionMatrix(double **_P) const;

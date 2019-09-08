@@ -14,7 +14,8 @@ private:
     double e1;
     double e2;
 
-    void computeJ(int n, const double * b, double *J);
+    void computeJ(int n, const double *b, double *J);
+    double computeZstar(int n, const double *eta, const double *d);
 
     void estimateQueueOccupancyProbability(
             double **P, double beta,

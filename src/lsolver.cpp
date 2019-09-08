@@ -12,13 +12,8 @@ void Lsolver::solve(const Graph *g, const double *b, double *x) {
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
-    double b_sink = 0;
     for (int i = 0; i < n; ++i) {
-        J[i] = -b[i];
-        if (b[i] < 0) b_sink = b[i];
-    }
-    for (int i = 0; i < n; ++i) {
-        J[i] /= b_sink;
+        J[i] = -b[i]/b[n - 1];
     }
 }
 
@@ -41,7 +36,7 @@ void init2dMatrix(T **P, int n, int m) {
 }
 
 template <typename T>
-void del(T **P, int n, int m) {
+void del(T **P, int n) {
     for (int i = 0; i < n; ++i) {
         delete[] P[i];
     }
@@ -74,15 +69,31 @@ double Lsolver::computeStationaryState(
         estimateQueueOccupancyProbability(P, beta, J, T_samp, eta);
     } while (max(n, eta) < 0.75 * (1 - e1 - e2));
 
-    del(P, n, n);
+    del(P, n);
     delete[] J; J = NULL;
 
     return beta;
 }
 
-// TODO
+double Lsolver::computeZstar(int n, const double *eta, const double *d) {
+    double zstar = 0;
+    for (int i = 0; i < n; ++i) {
+        zstar += eta[i]/d[i];
+    }
+    return -zstar;
+}
+
+
+// TODO: This can also be parallely after computing z*
 void Lsolver::computeCanonicalSolution(
         const Graph *g, const double *b,
         double *eta, double beta, double *x) {
-    x = new double[g->getNumVertex()];
+    int n = g->getNumVertex();
+
+    double d = new double[n];
+    g->copyDegreeMatrix(d);
+
+    auto zstar = computeZstar(n, eta, d);
+
+    x = new double[n];
 }
