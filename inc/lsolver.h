@@ -18,7 +18,7 @@ private:
     double computeZstar(int n, const double *eta, const double *d);
 
     void estimateQueueOccupancyProbability(
-            double **P, double beta,
+            int n, double **P, double beta,
             const double *J, double T_samp, double *eta);
     double computeStationaryState(
             const Graph *g, const double *b, double *eta);

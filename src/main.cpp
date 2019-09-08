@@ -17,18 +17,18 @@ int main(int argc, char **argv) {
 
     Graph *g = NULL;
     double *b = NULL;
-    char *ifname = argv[0];
+    char *ifname = argv[1];
     in(ifname, g, b);
 
     double *x = NULL;
     Lsolver().solve(g, b, x);
 
-    int n = g->getNumVertex();
-
-    delete g; g = NULL;
     delete[] b; b = NULL;
 
-    char *ofname = argv[1];
+    int n = g->getNumVertex();
+    delete g; g = NULL;
+
+    char *ofname = argv[2];
     out(ofname, n, x);
 
     delete[] x; x = NULL;
