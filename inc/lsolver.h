@@ -5,23 +5,26 @@
 
 class Lsolver {
 public:
-    Lsolver(): e1(0.1), e2(0.1) { }
-    Lsolver(double _e1, double _e2): e1(_e1), e2(_e2) { }
+    Lsolver(double _e1 = 0.1, double _e2 = 0.1, double _k = 0.1):
+        k(_k), e1(_e1), e2(_e2) { }
 
     void solve(const Graph *g, const double *b, double *x);
 private:
+    double k;
     double e1;
     double e2;
-    double computeT_hit(const Graph *g);
+
+    void computeJ(int n, const double * b, double *J);
 
     void estimateQueueOccupancyProbability(
-            double **P, const double beta, const double *J,
-            const double T_mix, const double T_samp, double *eta);
+            double **P, double beta,
+            const double *J, double T_samp, double *eta);
     double computeStationaryState(
-            const Graph *g, const double *b, double t_hit, double *eta);
+            const Graph *g, const double *b, double *eta);
 
     void computeCanonicalSolution(
-            const Graph *g, const double *b, double *eta, double beta, double *x);
+            const Graph *g, const double *b,
+            double *eta, double beta, double *x);
 };
 
 #endif

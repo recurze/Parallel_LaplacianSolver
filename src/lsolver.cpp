@@ -3,22 +3,15 @@
 #include <cmath>
 
 void Lsolver::solve(const Graph *g, const double *b, double *x) {
-    auto t_hit = computeT_hit(g);
-
     double *eta = NULL;
-    auto beta = computeStationaryState(g, b, t_hit, eta);
+    auto beta = computeStationaryState(g, b, eta);
 
     computeCanonicalSolution(g, b, eta, beta, x);
 
     delete[] eta; eta = NULL;
 }
 
-// TODO: Figure out how to compute t_hit
-double Lsolver::computeT_hit(const Graph *g) {
-    return (double) g->getNumVertex();
-}
-
-void computeJ(int n, const double *b, double *J) {
+void Lsolver::computeJ(int n, const double *b, double *J) {
     double b_sink = 0;
     for (int i = 0; i < n; ++i) {
         J[i] = -b[i];
@@ -57,16 +50,15 @@ void del(T **P, int n, int m) {
 
 // TODO: This is the main parallel function!
 void Lsolver::estimateQueueOccupancyProbability(
-        double **P, const double beta, const double *J,
-        const double T_mix, const double T_samp, double *eta) {
+        double **P, double beta,
+        const double *J, double T_samp, double *eta) {
 }
 
 double Lsolver::computeStationaryState(
-        const Graph *g, const double *b, double t_hit, double *eta) {
+        const Graph *g, const double *b, double *eta) {
     int n = g->getNumVertex();
 
-    auto T_mix = 64 * t_hit * log(1.0/e1);
-    auto T_samp = 4 * log(n)/(e2*e2); // TODO: Do we need kappa?
+    auto T_samp = 4*log(n) / (k*k*e2*e2);
 
     double *J = new double[n];
     computeJ(n, b, J);
@@ -79,7 +71,7 @@ double Lsolver::computeStationaryState(
     eta = new double[n];
     do {
         beta /= 2;
-        estimateQueueOccupancyProbability(P, beta, J, T_mix, T_samp, eta);
+        estimateQueueOccupancyProbability(P, beta, J, T_samp, eta);
     } while (max(n, eta) < 0.75 * (1 - e1 - e2));
 
     del(P, n, n);
@@ -90,6 +82,7 @@ double Lsolver::computeStationaryState(
 
 // TODO
 void Lsolver::computeCanonicalSolution(
-        const Graph *g, const double *b, double *eta, double beta, double *x) {
+        const Graph *g, const double *b,
+        double *eta, double beta, double *x) {
     x = new double[g->getNumVertex()];
 }
