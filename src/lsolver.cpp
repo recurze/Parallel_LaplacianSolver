@@ -35,7 +35,7 @@ void Lsolver::solve(const Graph *g, const double *b, double **x) {
     delete[] eta; eta = NULL;
 
     auto error = computeError(g, b, *x);
-    std::cout << "Beta: " << beta << "\nError: " << error << std::endl;
+    std::cerr << "Beta: " << beta << "\nError: " << error << std::endl;
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
@@ -189,6 +189,18 @@ void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
     }
 }
 
+double checkStationarity(int n, double **P, double *pi) {
+    double mse = 0;
+    for (int i = 0; i < n; ++i) {
+        double se = -pi[i];
+        for (int j = 0; j < n; ++j) {
+            se += (P[j][i] * pi[j]);
+        }
+        mse += se * se;
+    }
+    return sqrt(mse/n);
+}
+
 double Lsolver::computeStationaryState(
         const Graph *g, const double *b, double **eta) {
 
@@ -218,12 +230,16 @@ double Lsolver::computeStationaryState(
         max_eta = max(n, *eta);
     } while (max_eta > 0.75 * (1 - e1 - e2) and beta > 0);
 
-    del(n, prefixP);
     delete[] J; J = NULL;
     delete[] cnt; cnt = NULL;
     delete[] oldQ; oldQ = NULL;
     delete[] newQ; newQ = NULL;
 
+    g->copyTransitionMatrix(prefixP);
+    auto error = checkStationarity(n, prefixP, *eta);
+    del(n, prefixP);
+
+    std::cerr << "Stationarity: " << error << std::endl;
     return beta;
 }
 
@@ -252,4 +268,5 @@ void Lsolver::computeCanonicalSolution(
     for (int i = 0; i < n; ++i) {
         (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar*(d[i]/sum_d));
     }
+    std::cerr << "Sum of x: " << sum(n, *x) << std::endl;
 }

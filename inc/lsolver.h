@@ -5,7 +5,7 @@
 
 class Lsolver {
 public:
-    Lsolver(double _e1 = 0.1, double _e2 = 0.1, double _k = 0.5):
+    Lsolver(double _e1 = 0.05, double _e2 = 0.05, double _k = 0.1):
         k(_k), e1(_e1), e2(_e2) { }
 
     void solve(const Graph *g, const double *b, double **x);
