@@ -103,6 +103,13 @@ Print one and only line containing n space seperated real numbers, the solution
 to Lx=b
 ```
 
+
+## How To run
+
+* To generate testcases: `./testgen.py 100`
+* To compile the program: `make`, from the root directory
+* To run the program: `./main 100.inp 100.out`
+
 ---
 
 ## TODO
