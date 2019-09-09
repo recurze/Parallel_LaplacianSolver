@@ -1,0 +1,95 @@
+This repository will contain the implementation of the algorithm presented in \href{https://arxiv.org/abs/1905.04989}{\texttt{ this paper}}. The paper describes a random walk based method to solve an important class of Laplacian Systems (Lx = b), called \char`\"{}one-\/sink\char`\"{} systems, where exactly one of the coordinates of b is negative.\hypertarget{md_README_autotoc_md1}{}\doxysection{Problem Statement}\label{md_README_autotoc_md1}
+You are given an undirected positive weighted connected graph G = (V, E, w) with adjacency matrix A\textsubscript{uv} = w\textsubscript{uv}. You are required to solve the system of equations\+: Lx = b where L is the \href{https://en.wikipedia.org/wiki/Laplacian_matrix\#Definition}{\texttt{ Laplacian matrix}}.\hypertarget{md_README_autotoc_md2}{}\doxysection{Algorithm}\label{md_README_autotoc_md2}
+The algorithm works by deriving the canonical solution from the stationary state of the data collection process\+: Packets are generated at each node as an independent Bernoulli process, transmitted to neighbors according to \href{https://en.wikipedia.org/wiki/Stochastic_matrix\#Definition_and_properties}{\texttt{ stochastic matrix}} where P\textsubscript{uv} is directly propotional to w\textsubscript{uv} and sunk at sink node only. Naturally, it consists of two phases\+: find parameter {$\beta$} such that D\+CP is ergodic and compute the stationary state, compute the canonical solution by choosing an appropriate constant offset.\hypertarget{md_README_autotoc_md3}{}\doxysubsection{Computing beta and stationary state}\label{md_README_autotoc_md3}
+We have a lower limit for {$\beta$}$\ast$ below which it\textquotesingle{}s ergodic, so we binary search this lower limit. Whenever it\textquotesingle{}s not ergodic, there\textquotesingle{}s one {$\eta$} (queue occupancy probability) which reaches 1, so we simply simulate the D\+CP at each {$\beta$} and check for this condition.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{func estimateQueueOccupancyProbability(P, beta, J, T\_mix, T\_samp):}
+\DoxyCodeLine{    We generate and transmit for T\_mix seconds, allowing it to reach}
+\DoxyCodeLine{    stationarity and then count the number of seconds queue is not empty for}
+\DoxyCodeLine{    T\_samp time, to estimate occupancy probability}
+\DoxyCodeLine{begin}
+\DoxyCodeLine{    t := 0}
+\DoxyCodeLine{    Q\_t(u) := 0 for all nodes}
+\DoxyCodeLine{    cnt(u) := 0 for all nodes}
+\DoxyCodeLine{}
+\DoxyCodeLine{    repeat}
+\DoxyCodeLine{        generate packets at all nodes according to Bernoulli(beta J\_u)}
+\DoxyCodeLine{        transmit packets according to stochastic matrix, P}
+\DoxyCodeLine{        increment cnt if queue is not empty and t > t\_mix for all nodes}
+\DoxyCodeLine{        t := t + 1}
+\DoxyCodeLine{    until t <= T\_mix + T\_samp}
+\DoxyCodeLine{}
+\DoxyCodeLine{    report: cnt/T\_samp as the estimate}
+\DoxyCodeLine{end}
+\DoxyCodeLine{}
+\DoxyCodeLine{func computeStationaryState(P, b, t\_hit):}
+\DoxyCodeLine{    We start with beta = 1 and reduce by half everytime we find that it's}
+\DoxyCodeLine{    non-\/ergodic}
+\DoxyCodeLine{begin}
+\DoxyCodeLine{    T\_mix := 64t\_hit log(1/e1)}
+\DoxyCodeLine{    T\_samp := 4logn/(k\string^2 e2\string^2)}
+\DoxyCodeLine{    J := -\/b/b\_sink}
+\DoxyCodeLine{}
+\DoxyCodeLine{    beta := 1}
+\DoxyCodeLine{    repeat}
+\DoxyCodeLine{        beta := beta/2}
+\DoxyCodeLine{        eta := estimateQueueOccupancyProbability(P, beta, J, T\_mix, T\_samp)}
+\DoxyCodeLine{    until max(eta) < 0.75(1 -\/ e1 -\/ e2)}
+\DoxyCodeLine{}
+\DoxyCodeLine{    report: eta as the stationary state}
+\DoxyCodeLine{end}
+\end{DoxyCode}
+\hypertarget{md_README_autotoc_md4}{}\doxysubsection{Offset for canonical solution}\label{md_README_autotoc_md4}
+The solution to Lx=b satisfies $<$$<$Lx, 1$>$$>$ = 0 as {$\lambda$}\textsubscript{1} = 0, so we need to have an offset for stationary state such that this holds.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{func computeCanonicalSolution(eta, beta, D, b):}
+\DoxyCodeLine{    Shifts the stationary state, eta by z*}
+\DoxyCodeLine{begin}
+\DoxyCodeLine{    z* := -\/sum of eta(u)/d(u) for all u}
+\DoxyCodeLine{    sum\_d := sum of d(u) for all u}
+\DoxyCodeLine{    x(u) := -\/b\_sink(eta(u)/d(u) + z*d(u)/sum\_d)/beta}
+\DoxyCodeLine{}
+\DoxyCodeLine{    report: x as the solution to Lx=b}
+\DoxyCodeLine{end}
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Refer to the paper for a detailed analysis and description of the algorithm regarding constants.
+\end{DoxyItemize}\hypertarget{md_README_autotoc_md5}{}\doxysection{I\+O format}\label{md_README_autotoc_md5}
+The input will be of the following format
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{The first line in the file is a single integer n, denoting the number of nodes}
+\DoxyCodeLine{The following n lines will have n space seperated real numbers, the Adjacency}
+\DoxyCodeLine{matrix in row-\/major format}
+\DoxyCodeLine{The final line will have n space seperated real numbers, the b in Lx=b}
+\DoxyCodeLine{}
+\DoxyCodeLine{A[i][i] = 0}
+\DoxyCodeLine{A[i][j] = A[j][i] >= 0}
+\DoxyCodeLine{b[n] = sum(b[1..n-\/1])}
+\end{DoxyCode}
+
+
+The output should be of the following format\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Print one and only line containing n space seperated real numbers, the solution}
+\DoxyCodeLine{to Lx=b}
+\end{DoxyCode}
+
+
+\DoxyHorRuler
+\hypertarget{md_README_autotoc_md7}{}\doxysection{T\+O\+DO}\label{md_README_autotoc_md7}
+
+\begin{DoxyItemize}
+\item Implement these sequentially first.
+\item Parallel implementation for a k-\/core machine requires graph partioning. How to? 
+\end{DoxyItemize}

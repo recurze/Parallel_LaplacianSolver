@@ -1,0 +1,51 @@
+\hypertarget{namespacetestgen}{}\doxysection{testgen Namespace Reference}
+\label{namespacetestgen}\index{testgen@{testgen}}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{namespacetestgen_a765f8f7b4176e12965a6aa3632bae8d8}\label{namespacetestgen_a765f8f7b4176e12965a6aa3632bae8d8}} 
+def {\bfseries generate\+\_\+undirected\+Weighted\+Connected\+Graph} (n, m)
+\item 
+\mbox{\Hypertarget{namespacetestgen_a815ad5b2155ffd23aa93011ca9dd2c6a}\label{namespacetestgen_a815ad5b2155ffd23aa93011ca9dd2c6a}} 
+def {\bfseries generate\+\_\+randomb} (n)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{namespacetestgen_aac0383e86ab69bca0b49b2005c14f235}\label{namespacetestgen_aac0383e86ab69bca0b49b2005c14f235}} 
+{\bfseries minw}
+\item 
+\mbox{\Hypertarget{namespacetestgen_a518bd403fd806ae1ae0e9ed1d6123b4b}\label{namespacetestgen_a518bd403fd806ae1ae0e9ed1d6123b4b}} 
+{\bfseries maxw}
+\item 
+\mbox{\Hypertarget{namespacetestgen_a43f7863437e28d39e1f0a222e4d074b9}\label{namespacetestgen_a43f7863437e28d39e1f0a222e4d074b9}} 
+{\bfseries n} = int(sys.\+argv\mbox{[}1\mbox{]})
+\item 
+\mbox{\Hypertarget{namespacetestgen_aa52f416b96ae9565d86fbb78b7ce911e}\label{namespacetestgen_aa52f416b96ae9565d86fbb78b7ce911e}} 
+{\bfseries m} = random.\+randint(n -\/ 1, n$\ast$(n -\/ 1)/2)
+\item 
+\mbox{\Hypertarget{namespacetestgen_a621118e5be02bfda56030675fe1812d4}\label{namespacetestgen_a621118e5be02bfda56030675fe1812d4}} 
+def {\bfseries A} = generate\+\_\+undirected\+Weighted\+Connected\+Graph(n, m)
+\item 
+\mbox{\Hypertarget{namespacetestgen_aa253adf734de63177030e7fabadcca48}\label{namespacetestgen_aa253adf734de63177030e7fabadcca48}} 
+def {\bfseries b} = generate\+\_\+randomb(n)
+\item 
+\mbox{\Hypertarget{namespacetestgen_a608c528292e882cbbbce9275a7e586df}\label{namespacetestgen_a608c528292e882cbbbce9275a7e586df}} 
+string {\bfseries ifname} = str(n) + \textquotesingle{}.inp\textquotesingle{}
+\item 
+\mbox{\Hypertarget{namespacetestgen_a0a518a595e10649fe942c26db00408ff}\label{namespacetestgen_a0a518a595e10649fe942c26db00408ff}} 
+{\bfseries file}
+\item 
+\mbox{\Hypertarget{namespacetestgen_a911655f3659ee51f3a214e786e6e939a}\label{namespacetestgen_a911655f3659ee51f3a214e786e6e939a}} 
+{\bfseries end}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}Generates 1 files
+    n.inp
+    where n is the size of the graph, fed as command line argument
+
+    n.inp contains the graph and b according to the format specified in README
+\end{DoxyVerb}
+ 
