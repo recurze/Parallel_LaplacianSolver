@@ -18,7 +18,7 @@ double computeError(const Graph *g, const double *b, double *x) {
     for (int i = 0; i < n; ++i) {
         double se = -b[i];
         for (int j = 0; j < n; ++j) {
-            se += L[i][j] * x[j];
+            se += L[i][j]*x[j];
         }
         mse += (se * se);
     }
@@ -28,6 +28,8 @@ double computeError(const Graph *g, const double *b, double *x) {
 void Lsolver::solve(const Graph *g, const double *b, double **x) {
     double *eta = NULL;
     auto beta = computeStationaryState(g, b, &eta);
+    assert(eta != NULL);
+    assert(beta > 0 and beta <= 1);
 
     computeCanonicalSolution(g, b, eta, beta, x);
     delete[] eta; eta = NULL;
@@ -63,7 +65,7 @@ T sum(int n, T *a) {
 }
 
 template <typename T>
-void del(T **P, int n) {
+void del(int n, T **P) {
     for (int i = 0; i < n; ++i) {
         delete[] P[i];
     }
@@ -71,7 +73,7 @@ void del(T **P, int n) {
 }
 
 template <typename T>
-void copy1d(T *orig, T *copy, int n) {
+void copy1d(int n, T *orig, T *copy) {
     for (int i = 0; i < n; ++i) {
         copy[i] = orig[i];
     }
@@ -80,88 +82,116 @@ void copy1d(T *orig, T *copy, int n) {
 std::mt19937 rng;
 std::uniform_real_distribution<double> dist(0, 1);
 
-bool generatePacket(double p) {
+inline bool generatePacket(double p) {
     return dist(rng) <= p;
 }
 
-int pickNeighbor(int n, double *P) {
-    double *prefix_P = new double[n];
-
-    prefix_P[0] = P[0];
-    for (int i = 1; i < n; ++i) {
-        prefix_P[i] = prefix_P[i - 1] + P[i];
-    }
-
-    auto x = std::upper_bound(prefix_P, prefix_P + n, dist(rng)) - prefix_P;
-
-    delete[] prefix_P;
+// If rand lands in [prefixPi[i], prefixPi[i + 1]) which is probability Pi[i],
+int pickNeighbor(int n, double *prefixPi) {
+    auto x = std::upper_bound(prefixPi, prefixPi + n, dist(rng)) - prefixPi;
     return x;
 }
 
+void Lsolver::generateNewPackets(
+        int n, int *Q, double beta, const double *J) {
+    for (int i = 0; i < n - 1; ++i) {
+        Q[i] += generatePacket(beta * J[i]);
+    }
+}
+
+void Lsolver::transmitToRandomNeighbor(
+        int n, double *prefixPi, int *Q, int qid) {
+    --Q[qid];
+    ++Q[pickNeighbor(n, prefixPi)];
+}
+
+void Lsolver::transmitPackets(
+        int n, double **prefixP, int *oldQ, int *newQ) {
+    for (int i = 0; i < n - 1; ++i) {
+        if (oldQ[i] > 0) {
+            transmitToRandomNeighbor(n, prefixP[i], newQ, i);
+        }
+    }
+}
+
+bool Lsolver::hasConverged(int n, int *oldQ, int *newQ) {
+    int changed = 0;
+    for (int i = 0; i < n; ++i) {
+        if (oldQ[i] != newQ[i]) {
+            ++changed;
+        }
+    }
+    return changed < 0.1*n;
+}
+
+void Lsolver::updateCnt(int n, int *Q, int *cnt) {
+    for (int i = 0; i < n - 1; ++i) {
+        if (Q[i] > 0) {
+            ++cnt[i];
+        }
+    }
+}
+
 void Lsolver::estimateQueueOccupancyProbability(
-        int n, double **P, double beta,
-        const double *J, double T_samp, double **eta) {
+        int n, double **prefixP, int *cnt, int *oldQ, int *newQ,
+        double beta, const double *J, double T_samp, double *eta) {
 
     rng.seed(std::random_device{}());
 
-    int * Q = new int[n];
-    int *nQ = new int[n];
-
-    std::fill(Q, Q + n, 0);
-    std::fill(nQ, nQ + n, 0);
-    std::fill(*eta, *eta + n, 0.0);
+    std::fill(cnt, cnt + n, 0);
+    std::fill(oldQ, oldQ + n, 0);
+    std::fill(newQ, newQ + n, 0);
 
     int T = 0;
     bool converged = false;
     bool completed = false;
     do {
-        for (int i = 0; i < n - 1; ++i) {
-            Q[i] += generatePacket(beta * J[i]);
-        }
+        generateNewPackets(n, oldQ, beta, J);
+        copy1d(n, oldQ, newQ);
 
-        copy1d(Q, nQ, n);
-
-        for (int i = 0; i < n - 1; ++i) {
-            if (Q[i] > 0) {
-                auto v = pickNeighbor(n, P[i]);
-                --nQ[i];
-                ++nQ[v];
-            }
-        }
+        transmitPackets(n, prefixP, oldQ, newQ);
+        copy1d(n, newQ, oldQ);
 
         if (not converged) {
-            int c = 0;
-            for (int i = 0; i < n - 1; ++i) {
-                if (Q[i] != nQ[i]) {
-                    ++c;
-                }
-            }
-            converged = (c < 0.1*n);
-        }
-        copy1d(nQ, Q, n);
-
-        if (converged) {
+            converged = hasConverged(n, oldQ, newQ);
+        } else {
             ++T;
-            for (int i = 0; i < n - 1; ++i) {
-                if (Q[i] > 0) {
-                    (*eta)[i] += 1;
-                }
-            }
+            updateCnt(n, oldQ, cnt);
             completed = (T > T_samp);
         }
-
-    } while (!completed);
-
-    delete[]  Q;
-    delete[] nQ;
+    } while(!completed);
 
     for (int i = 0; i < n; ++i) {
-        (*eta)[i] /= T_samp;
+        eta[i] = cnt[i]/T_samp;
+    }
+}
+
+template <typename T>
+void init2d(int n, int m, T*** A) {
+    *A = new T*[n];
+    for (int i = 0; i < n; ++i) {
+        (*A)[i] = new T[m];
+    }
+}
+
+template <typename T>
+void makePrefixSum(int n, T* A) {
+    for (int i = 1; i < n; ++i) {
+        A[i] += A[i - 1];
+    }
+}
+
+void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
+    g->copyTransitionMatrix(prefixP);
+    // check pickNeighbor to see it work in log(n) thanks to prefixSum of P
+    for (int i = 0; i < n; ++i) {
+        makePrefixSum(n, prefixP[i]);
     }
 }
 
 double Lsolver::computeStationaryState(
         const Graph *g, const double *b, double **eta) {
+
     int n = g->getNumVertex();
 
     auto T_samp = 4*log(n) / (k*k*e2*e2);
@@ -169,25 +199,30 @@ double Lsolver::computeStationaryState(
     double *J = new double[n];
     computeJ(n, b, J);
 
-    double **P = new double*[n];
-    for (int i = 0; i < n; ++i) {
-        P[i] = new double[n];
-    }
-    g->copyTransitionMatrix(P);
+    double **prefixP = NULL;
+    init2d(n, n, &prefixP);
+    computePrefixP(n, g, prefixP);
 
-    double beta = 1, mx;
+    int *cnt = new int[n];
+    int *oldQ = new int[n];
+    int *newQ = new int[n];
+
     *eta = new double[n];
+    double beta = 1, max_eta;
     do {
         beta /= 2;
-        assert(beta > 0);
 
-        estimateQueueOccupancyProbability(n, P, beta, J, T_samp, eta);
+        estimateQueueOccupancyProbability(
+                n, prefixP, cnt, oldQ, newQ, beta, J, T_samp, *eta);
 
-        mx = max(n, *eta);
-    } while (mx > 0.75 * (1 - e1 - e2));
+        max_eta = max(n, *eta);
+    } while (max_eta > 0.75 * (1 - e1 - e2) and beta > 0);
 
-    del(P, n);
+    del(n, prefixP);
     delete[] J; J = NULL;
+    delete[] cnt; cnt = NULL;
+    delete[] oldQ; oldQ = NULL;
+    delete[] newQ; newQ = NULL;
 
     return beta;
 }
@@ -203,6 +238,7 @@ double Lsolver::computeZstar(int n, const double *eta, const double *d) {
 void Lsolver::computeCanonicalSolution(
         const Graph *g, const double *b,
         double *eta, double beta, double **x) {
+
     int n = g->getNumVertex();
 
     double* d = new double[n];

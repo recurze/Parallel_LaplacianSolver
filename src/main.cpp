@@ -20,8 +20,13 @@ int main(int argc, char **argv) {
     char *ifname = argv[1];
     in(ifname, &g, &b);
 
+    assert(g != NULL);
+    assert(b != NULL);
+
     double *x = NULL;
     Lsolver().solve(g, b, &x);
+
+    assert(x != NULL);
 
     delete[] b; b = NULL;
 
@@ -52,7 +57,7 @@ bool isSymmetric(int n, double **A) {
 bool isPositiveWeighted(int n, double **A) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
-            if (A[i][j] < 0) {
+            if (A[i][j] < -EPS) {
                 return false;
             }
         }

@@ -15,13 +15,23 @@ private:
     double e2;
 
     void computeJ(int n, const double *b, double *J);
+    void computePrefixP(int n, const Graph *g, double **prefixP);
     double computeZstar(int n, const double *eta, const double *d);
 
-    void estimateQueueOccupancyProbability(
-            int n, double **P, double beta,
-            const double *J, double T_samp, double **eta);
     double computeStationaryState(
             const Graph *g, const double *b, double **eta);
+
+    void updateCnt(int n, int *Q, int *cnt);
+    bool hasConverged(int n, int *oldQ, int *newQ);
+
+    void generateNewPackets(int n, int *Q, double beta, const double *J);
+
+    void transmitPackets(int n, double **prefixP, int *oldQ, int *newQ);
+    void transmitToRandomNeighbor(int n, double *prefixPi, int *Q, int qid);
+
+    void estimateQueueOccupancyProbability(
+            int n, double **prefixP, int *cnt, int *oldQ, int *newQ,
+            double beta, const double *J, double T_samp, double *eta);
 
     void computeCanonicalSolution(
             const Graph *g, const double *b,
