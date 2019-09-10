@@ -18,6 +18,11 @@ private:
     double **A;
     double **P;
     double **L;
+
+    void init();
+    void computeL();
+    void computeP();
+    void computeD();
 };
 
 #endif

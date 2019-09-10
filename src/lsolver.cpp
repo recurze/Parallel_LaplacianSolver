@@ -14,15 +14,16 @@ double computeError(const Graph *g, const double *b, double *x) {
     }
     g->copyLaplacianMatrix(L);
 
-    double mse = 0;
+    // RMS of (Lx - b)
+    double sumOfSquareError = 0;
     for (int i = 0; i < n; ++i) {
-        double se = -b[i];
+        double error = -b[i];
         for (int j = 0; j < n; ++j) {
-            se += L[i][j]*x[j];
+            error += L[i][j]*x[j];
         }
-        mse += (se * se);
+        sumOfSquareError += (error * error);
     }
-    return sqrt(mse/n);
+    return sqrt(sumOfSquareError/n);
 }
 
 void Lsolver::solve(const Graph *g, const double *b, double **x) {
@@ -73,21 +74,21 @@ void del(int n, T **P) {
 }
 
 template <typename T>
-void copy1d(int n, T *orig, T *copy) {
+void copy1d(T *orig, T *copy, int n) {
     for (int i = 0; i < n; ++i) {
         copy[i] = orig[i];
     }
 }
 
+
 std::mt19937 rng;
 std::uniform_real_distribution<double> dist(0, 1);
-
-inline bool generatePacket(double p) {
+inline bool generatePacketWithProbability(double p) {
     return dist(rng) <= p;
 }
 
-// If rand lands in [prefixPi[i], prefixPi[i + 1]) which is probability Pi[i],
-int pickNeighbor(int n, double *prefixPi) {
+// Random lands in [prefixPi[i], prefixPi[i + 1]) with probability Pi[i]
+int pickRandomNeighbor(int n, double *prefixPi) {
     auto x = std::upper_bound(prefixPi, prefixPi + n, dist(rng)) - prefixPi;
     return x;
 }
@@ -95,14 +96,14 @@ int pickNeighbor(int n, double *prefixPi) {
 void Lsolver::generateNewPackets(
         int n, int *Q, double beta, const double *J) {
     for (int i = 0; i < n - 1; ++i) {
-        Q[i] += generatePacket(beta * J[i]);
+        Q[i] += generatePacketWithProbability(beta * J[i]);
     }
 }
 
 void Lsolver::transmitToRandomNeighbor(
         int n, double *prefixPi, int *Q, int qid) {
     --Q[qid];
-    ++Q[pickNeighbor(n, prefixPi)];
+    ++Q[pickRandomNeighbor(n, prefixPi)];
 }
 
 void Lsolver::transmitPackets(
@@ -115,13 +116,13 @@ void Lsolver::transmitPackets(
 }
 
 bool Lsolver::hasConverged(int n, int *oldQ, int *newQ) {
-    int changed = 0;
+    int numberOfNodesWithUnstableQueue = 0;
     for (int i = 0; i < n; ++i) {
         if (oldQ[i] != newQ[i]) {
-            ++changed;
+            ++numberOfNodesWithUnstableQueue;
         }
     }
-    return changed < 0.1*n;
+    return numberOfNodesWithUnstableQueue < 0.1*n;
 }
 
 void Lsolver::updateCnt(int n, int *Q, int *cnt) {
@@ -144,13 +145,13 @@ void Lsolver::estimateQueueOccupancyProbability(
 
     int T = 0;
     bool converged = false;
-    bool completed = false;
+    bool completed = false; // completed when converged and sampled
     do {
         generateNewPackets(n, oldQ, beta, J);
-        copy1d(n, oldQ, newQ);
+        copy1d(oldQ, newQ, n);
 
         transmitPackets(n, prefixP, oldQ, newQ);
-        copy1d(n, newQ, oldQ);
+        copy1d(newQ, oldQ, n);
 
         if (not converged) {
             converged = hasConverged(n, oldQ, newQ);
@@ -167,7 +168,7 @@ void Lsolver::estimateQueueOccupancyProbability(
 }
 
 template <typename T>
-void init2d(int n, int m, T*** A) {
+void initNewMemory2d(int n, int m, T*** A) {
     *A = new T*[n];
     for (int i = 0; i < n; ++i) {
         (*A)[i] = new T[m];
@@ -175,7 +176,7 @@ void init2d(int n, int m, T*** A) {
 }
 
 template <typename T>
-void makePrefixSum(int n, T* A) {
+void replaceArrayWithPrefixSum(int n, T* A) {
     for (int i = 1; i < n; ++i) {
         A[i] += A[i - 1];
     }
@@ -183,22 +184,22 @@ void makePrefixSum(int n, T* A) {
 
 void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
     g->copyTransitionMatrix(prefixP);
-    // check pickNeighbor to see it work in log(n) thanks to prefixSum of P
     for (int i = 0; i < n; ++i) {
-        makePrefixSum(n, prefixP[i]);
+        replaceArrayWithPrefixSum(n, prefixP[i]);
     }
 }
 
-double checkStationarity(int n, double **P, double *pi) {
-    double mse = 0;
+double computeDistanceFromStationarity(int n, double **P, double *eta) {
+    // RMS of (P^T X eta - eta)
+    double sumOfSquareError = 0;
     for (int i = 0; i < n; ++i) {
-        double se = -pi[i];
+        double error = -eta[i];
         for (int j = 0; j < n; ++j) {
-            se += (P[j][i] * pi[j]);
+            error += (P[j][i] * eta[j]);
         }
-        mse += se * se;
+        sumOfSquareError += error * error;
     }
-    return sqrt(mse/n);
+    return sqrt(sumOfSquareError/n);
 }
 
 double Lsolver::computeStationaryState(
@@ -212,10 +213,15 @@ double Lsolver::computeStationaryState(
     computeJ(n, b, J);
 
     double **prefixP = NULL;
-    init2d(n, n, &prefixP);
+    initNewMemory2d(n, n, &prefixP);
+
+    // prefixP is replacing every row of P with prefixSum of that row
+    // with this pickRandomNeighbor to transmit msg can be done in log(n)
     computePrefixP(n, g, prefixP);
 
-    int *cnt = new int[n];
+    int *cnt  = new int[n];
+
+    // since transmission is concurrent, we need to hold 2 values
     int *oldQ = new int[n];
     int *newQ = new int[n];
 
@@ -236,10 +242,10 @@ double Lsolver::computeStationaryState(
     delete[] newQ; newQ = NULL;
 
     g->copyTransitionMatrix(prefixP);
-    auto error = checkStationarity(n, prefixP, *eta);
+    auto error = computeDistanceFromStationarity(n, prefixP, *eta);
     del(n, prefixP);
 
-    std::cerr << "Stationarity: " << error << std::endl;
+    std::cerr << "Stationarity distance: " << error << std::endl;
     return beta;
 }
 

@@ -1,54 +1,5 @@
 #include "graph.h"
 
-Graph::Graph(int _n): n(_n) {
-    D = new double[n];
-    A = new double*[n];
-    P = new double*[n];
-    L = new double*[n];
-    for (int i = 0; i < n; ++i) {
-        A[i] = new double[n];
-        P[i] = new double[n];
-        L[i] = new double[n];
-    }
-}
-
-Graph::Graph(int _n, double **_A): n(_n) {
-    D = new double[n];
-    A = new double*[n];
-    P = new double*[n];
-    L = new double*[n];
-    for (int i = 0; i < n; ++i) {
-        A[i] = new double[n];
-        P[i] = new double[n];
-        L[i] = new double[n];
-
-        D[i] = 0;
-        for (int j = 0; j < n; ++j) {
-            auto x = _A[i][j];
-            D[i] += x;
-            A[i][j] = x;
-            L[i][j] = -x;
-        }
-        L[i][i] = D[i];
-
-        for (int j = 0; j < n; ++j) {
-            P[i][j] = A[i][j]/D[i];
-        }
-    }
-}
-
-Graph::~Graph() {
-    for (int i = 0; i < n; ++i) {
-        delete[] A[i];
-        delete[] P[i];
-        delete[] L[i];
-    }
-    delete[] D;
-    delete[] A;
-    delete[] P;
-    delete[] L;
-}
-
 template <typename T>
 void copy1d(T *orig, T *copy, int n) {
     for (int i = 0; i < n; ++i) {
@@ -61,6 +12,74 @@ void copy2d(T **orig, T **copy, int n, int m) {
     for (int i = 0; i < n; ++i) {
         copy1d(orig[i], copy[i], m);
     }
+}
+
+void Graph::init() {
+    D = new double[n];
+    A = new double*[n];
+    P = new double*[n];
+    L = new double*[n];
+    for (int i = 0; i < n; ++i) {
+        A[i] = new double[n];
+        P[i] = new double[n];
+        L[i] = new double[n];
+    }
+}
+
+Graph::Graph(int _n): n(_n) {
+    init();
+}
+
+template <typename T>
+T sum(int n, T *a) {
+    T sum_a = 0;
+    for (int i = 0; i < n; ++i) {
+        sum_a += a[i];
+    }
+    return sum_a;
+}
+
+void Graph::computeD() {
+    for (int i = 0; i < n; ++i) {
+        D[i] = sum(n, A[i]);
+    }
+}
+
+void Graph::computeP() {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            P[i][j] = A[i][j]/D[i];
+        }
+    }
+}
+
+void Graph::computeL() {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            L[i][j] = -A[i][j];
+        }
+        L[i][i] = D[i];
+    }
+}
+
+Graph::Graph(int _n, double **_A): n(_n) {
+    init();
+    copy2d(_A, A, n, n);
+    computeD();
+    computeP();
+    computeL();
+}
+
+Graph::~Graph() {
+    for (int i = 0; i < n; ++i) {
+        delete[] A[i];
+        delete[] P[i];
+        delete[] L[i];
+    }
+    delete[] D;
+    delete[] A;
+    delete[] P;
+    delete[] L;
 }
 
 void Graph::copyDegreeMatrix(double *_D) const {
