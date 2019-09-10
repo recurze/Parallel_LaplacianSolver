@@ -122,7 +122,7 @@ bool Lsolver::hasConverged(int n, int *oldQ, int *newQ) {
             ++numberOfNodesWithUnstableQueue;
         }
     }
-    return numberOfNodesWithUnstableQueue < 0.1*n;
+    return numberOfNodesWithUnstableQueue < 0.05*n;
 }
 
 void Lsolver::updateCnt(int n, int *Q, int *cnt) {
@@ -236,16 +236,12 @@ double Lsolver::computeStationaryState(
         max_eta = max(n, *eta);
     } while (max_eta > 0.75 * (1 - e1 - e2) and beta > 0);
 
+    del(n, prefixP);
     delete[] J; J = NULL;
     delete[] cnt; cnt = NULL;
     delete[] oldQ; oldQ = NULL;
     delete[] newQ; newQ = NULL;
 
-    g->copyTransitionMatrix(prefixP);
-    auto error = computeDistanceFromStationarity(n, prefixP, *eta);
-    del(n, prefixP);
-
-    std::cerr << "Stationarity distance: " << error << std::endl;
     return beta;
 }
 
