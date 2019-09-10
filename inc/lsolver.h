@@ -18,7 +18,7 @@ private:
     void computePrefixP(int n, const Graph *g, double **prefixP);
     double computeZstar(int n, const double *eta, const double *d);
 
-    double computeStationaryState(
+    double computeQueueOccupancyProbabilityAtStationarity(
             const Graph *g, const double *b, double **eta);
 
     void updateCnt(int n, int *Q, int *cnt);

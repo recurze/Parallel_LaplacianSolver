@@ -28,7 +28,7 @@ double computeError(const Graph *g, const double *b, double *x) {
 
 void Lsolver::solve(const Graph *g, const double *b, double **x) {
     double *eta = NULL;
-    auto beta = computeStationaryState(g, b, &eta);
+    auto beta = computeQueueOccupancyProbabilityAtStationarity(g, b, &eta);
     assert(eta != NULL);
     assert(beta > 0 and beta <= 1);
 
@@ -202,7 +202,7 @@ double computeDistanceFromStationarity(int n, double **P, double *eta) {
     return sqrt(sumOfSquareError/n);
 }
 
-double Lsolver::computeStationaryState(
+double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
         const Graph *g, const double *b, double **eta) {
 
     int n = g->getNumVertex();
