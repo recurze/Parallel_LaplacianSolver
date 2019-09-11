@@ -37,7 +37,7 @@ def computeLaplacian(A):
 def computeSolution(A, b):
     L = np.array(computeLaplacian(A))
     b = np.array(b)
-    x = np.linalg.solve(L, b)
+    x = np.linalg.lstsq(L, b, rcond = None)[0]
     assert np.allclose(np.dot(L, x), b)
     return x
 
