@@ -104,13 +104,18 @@ inline void checkValidGraph(int n, double **A) {
     assert(noSelfLoops(n, A));
 }
 
-void checkValidb(int n, double *b) {
-    double s = 0;
+template <typename T>
+T sum(int n, const T *a) {
+    T sum_a = 0;
     for (int i = 0; i < n; ++i) {
-        s += b[i];
+        sum_a += a[i];
     }
-    assert(fabs(s) < EPS);
+    return sum_a;
+}
+
+void checkValidb(int n, const double *b) {
     assert(fabs(b[n - 1]) > EPS);
+    assert(fabs(sum(n, b)) < EPS);
 }
 
 void in(const char *fname, Graph **g, double **b) {

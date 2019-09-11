@@ -16,15 +16,15 @@ double computeErrorForLaplacian(const Graph *g, const double *b, double *x) {
     g->copyLaplacianMatrix(L);
 
     // Rel error: Lx, b
-    double norm_b = 0;
     double sumOfSquareError = 0;
     for (int i = 0; i < n; ++i) {
         double error = -b[i];
-        norm_b += error * error;
         for (int j = 0; j < n; ++j) {
             error += L[i][j]*x[j];
         }
+        error /= b[i];
         sumOfSquareError += (error * error);
+
         delete[] L[i];
     }
     delete[] L;
@@ -103,6 +103,7 @@ void Lsolver::generateNewPackets(
     }
 }
 
+// Rand lands in [prefixPi[i - 1], prefixPi[i]) with probability P[i]
 int Lsolver::pickRandomNeighbor(int n, double *prefixPi) {
     auto rand = dist(rng);
     return std::upper_bound(prefixPi, prefixPi + n, rand) - prefixPi;
@@ -150,16 +151,13 @@ void Lsolver::estimateQueueOccupancyProbability(
         int n, double **prefixP, int *cnt, int *Q, int *inQ,
         double beta, const double *J, double T_samp, double *eta) {
 
-    rng.seed(std::random_device{}());
-
-
     fill(n, Q, 0);
     fill(n, cnt, 0);
 
     int T = 0;
     bool converged = false;
     bool completed = false; // completed when converged and sampled
-    do {
+    while (!completed) {
         fill(n, inQ, 0);
 
         generateNewPackets(n, Q, beta, J);
@@ -173,7 +171,7 @@ void Lsolver::estimateQueueOccupancyProbability(
             updateCnt(n, Q, cnt);
             completed = (T > T_samp);
         }
-    } while(!completed);
+    }
 
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
@@ -206,13 +204,14 @@ void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
 
 double computeErrorForDCP(
         int n, double *eta, double **P, double beta, double *J) {
-    // RMS error: (I - P)^T X eta, beta X J
+    // Rel error: (I - P)^T X eta, beta X J
     double sumOfSquareError = 0;
     for (int i = 0; i < n; ++i) {
         double error = -beta * J[i];
         for (int j = 0; j < n; ++j) {
             error += ((i == j) - P[i][j]) * eta[j];
         }
+        error /= (beta*J[i]);
         sumOfSquareError += error * error;
     }
     return sqrt(sumOfSquareError/n);
@@ -220,6 +219,8 @@ double computeErrorForDCP(
 
 double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
         const Graph *g, const double *b, double **eta) {
+
+    rng.seed(std::random_device{}());
 
     int n = g->getNumVertex();
 
@@ -230,6 +231,9 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
 
     double **prefixP = NULL;
     initNewMemory2d(n, n, &prefixP);
+
+    // prefixP is each row of P replaced with prefixSum array of that row
+    // To pickNeighbor in O(logN)
     computePrefixP(n, g, prefixP);
 
     int *cnt  = new int[n];
@@ -254,7 +258,8 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     delete[] cnt; cnt = NULL;
     delete[] inQ; inQ = NULL;
 
-    //auto error = computeErrorForDCP(n, *eta, P, beta, J);
+    //g->copyTransitionMatrix(prefixP)
+    //auto error = computeErrorForDCP(n, *eta, prefixP, beta, J);
     //std::cerr << "DCP Error: " << error << std::endl;
 
     del(n, prefixP);
