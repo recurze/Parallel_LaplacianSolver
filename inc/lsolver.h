@@ -22,7 +22,7 @@ private:
             const Graph *g, const double *b, double **eta);
 
     void updateCnt(int n, int *Q, int *cnt);
-    bool hasConverged(int n, int *oldQ, int *newQ);
+    bool hasConverged(int n, int *inQ);
 
     void generateNewPackets(int n, int *Q, double beta, const double *J);
 
@@ -30,7 +30,7 @@ private:
     void transmitToRandomNeighbor(int n, double *prefixPi, int *Q, int qid);
 
     void estimateQueueOccupancyProbability(
-            int n, double **prefixP, int *cnt, int *oldQ, int *newQ,
+            int n, double **P, int *cnt, int *Q, int *inQ,
             double beta, const double *J, double T_samp, double *eta);
 
     void computeCanonicalSolution(

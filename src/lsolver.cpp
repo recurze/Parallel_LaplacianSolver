@@ -46,7 +46,7 @@ void Lsolver::computeJ(int n, const double *b, double *J) {
 }
 
 template <typename T>
-T max(int n, T *a) {
+T max(int n, const T *a) {
     T max_a = 0;
     for (int i = 0; i < n; ++i) {
         if (max_a < a[i]) {
@@ -57,12 +57,19 @@ T max(int n, T *a) {
 }
 
 template <typename T>
-T sum(int n, T *a) {
+T sum(int n, const T *a) {
     T sum_a = 0;
     for (int i = 0; i < n; ++i) {
         sum_a += a[i];
     }
     return sum_a;
+}
+
+template <typename T>
+void addArray(int n, T *a, const T *b) {
+    for (int i = 0; i < n; ++i) {
+        a[i] += b[i];
+    }
 }
 
 template <typename T>
@@ -73,52 +80,39 @@ void del(int n, T **P) {
     delete[] P;
 }
 
-template <typename T>
-void copy1d(T *orig, T *copy, int n) {
-    for (int i = 0; i < n; ++i) {
-        copy[i] = orig[i];
-    }
-}
-
-
 std::mt19937 rng;
 std::uniform_real_distribution<double> dist(0, 1);
-inline bool generatePacketWithProbability(double p) {
+inline bool trueWithProbability(double p) {
     return dist(rng) <= p;
-}
-
-// Random lands in [prefixPi[i], prefixPi[i + 1]) with probability Pi[i]
-int pickRandomNeighbor(int n, double *prefixPi) {
-    auto x = std::upper_bound(prefixPi, prefixPi + n, dist(rng)) - prefixPi;
-    return x;
 }
 
 void Lsolver::generateNewPackets(
         int n, int *Q, double beta, const double *J) {
-    for (int i = 0; i < n - 1; ++i) {
-        Q[i] += generatePacketWithProbability(beta * J[i]);
-    }
-}
 
-void Lsolver::transmitToRandomNeighbor(
-        int n, double *prefixPi, int *Q, int qid) {
-    --Q[qid];
-    ++Q[pickRandomNeighbor(n, prefixPi)];
-}
-
-void Lsolver::transmitPackets(
-        int n, double **prefixP, int *oldQ, int *newQ) {
     for (int i = 0; i < n - 1; ++i) {
-        if (oldQ[i] > 0) {
-            transmitToRandomNeighbor(n, prefixP[i], newQ, i);
+        if (trueWithProbability(beta * J[i])) {
+            ++Q[i];
         }
     }
 }
 
-bool Lsolver::hasConverged(int n, int *oldQ, int *newQ) {
+void Lsolver::transmitPackets(
+        int n, double **P, int *Q, int *inQ) {
+
+    for (int i = 0; i < n - 1; ++i) {
+        for (int j = 0; Q[i] > 0 and j < n; ++j) {
+            if (trueWithProbability(P[i][j])) {
+                --Q[i];
+                ++inQ[j];
+            }
+        }
+    }
+}
+
+bool Lsolver::hasConverged(int n, int *inQ) {
     int numberOfNodesWithUnstableQueue = 0;
     for (int i = 0; i < n; ++i) {
-        if (oldQ[i] != newQ[i]) {
+        if (inQ[i] > 0.05*n) {
             ++numberOfNodesWithUnstableQueue;
         }
     }
@@ -134,30 +128,29 @@ void Lsolver::updateCnt(int n, int *Q, int *cnt) {
 }
 
 void Lsolver::estimateQueueOccupancyProbability(
-        int n, double **prefixP, int *cnt, int *oldQ, int *newQ,
+        int n, double **P, int *cnt, int *Q, int *inQ,
         double beta, const double *J, double T_samp, double *eta) {
 
     rng.seed(std::random_device{}());
 
+    std::fill(Q, Q + n, 0);
     std::fill(cnt, cnt + n, 0);
-    std::fill(oldQ, oldQ + n, 0);
-    std::fill(newQ, newQ + n, 0);
 
     int T = 0;
     bool converged = false;
     bool completed = false; // completed when converged and sampled
     do {
-        generateNewPackets(n, oldQ, beta, J);
-        copy1d(oldQ, newQ, n);
+        std::fill(inQ, inQ + n, 0);
 
-        transmitPackets(n, prefixP, oldQ, newQ);
-        copy1d(newQ, oldQ, n);
+        generateNewPackets(n, Q, beta, J);
+        transmitPackets(n, P, Q, inQ);
+        addArray(n, Q, inQ);
 
         if (not converged) {
-            converged = hasConverged(n, oldQ, newQ);
+            converged = hasConverged(n, inQ);
         } else {
             ++T;
-            updateCnt(n, oldQ, cnt);
+            updateCnt(n, Q, cnt);
             completed = (T > T_samp);
         }
     } while(!completed);
@@ -175,27 +168,13 @@ void initNewMemory2d(int n, int m, T*** A) {
     }
 }
 
-template <typename T>
-void replaceArrayWithPrefixSum(int n, T* A) {
-    for (int i = 1; i < n; ++i) {
-        A[i] += A[i - 1];
-    }
-}
-
-void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
-    g->copyTransitionMatrix(prefixP);
-    for (int i = 0; i < n; ++i) {
-        replaceArrayWithPrefixSum(n, prefixP[i]);
-    }
-}
-
-double computeDistanceFromStationarity(int n, double **P, double *eta) {
-    // RMS of (P^T X eta - eta)
+double compute(int n, double *eta, double **P, double beta, double *J) {
+    // RMS of ((I - P)^T X eta = beta J)
     double sumOfSquareError = 0;
     for (int i = 0; i < n; ++i) {
-        double error = -eta[i];
+        double error = -beta * J[i];
         for (int j = 0; j < n; ++j) {
-            error += (P[j][i] * eta[j]);
+            error += ((i == j) - P[i][j]) * eta[j];
         }
         sumOfSquareError += error * error;
     }
@@ -212,18 +191,15 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     double *J = new double[n];
     computeJ(n, b, J);
 
-    double **prefixP = NULL;
-    initNewMemory2d(n, n, &prefixP);
-
-    // prefixP is replacing every row of P with prefixSum of that row
-    // with this pickRandomNeighbor to transmit msg can be done in log(n)
-    computePrefixP(n, g, prefixP);
+    double **P = NULL;
+    initNewMemory2d(n, n, &P);
+    g->copyTransitionMatrix(P);
 
     int *cnt  = new int[n];
 
-    // since transmission is concurrent, we need to hold 2 values
-    int *oldQ = new int[n];
-    int *newQ = new int[n];
+    // since transmission is concurrent, we need separate inbox
+    int *Q = new int[n];
+    int *inQ = new int[n];
 
     *eta = new double[n];
     double beta = 1, max_eta;
@@ -231,16 +207,19 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
         beta /= 2;
 
         estimateQueueOccupancyProbability(
-                n, prefixP, cnt, oldQ, newQ, beta, J, T_samp, *eta);
+                n, P, cnt, Q, inQ, beta, J, T_samp, *eta);
 
+        std::cerr << beta << std::endl;
         max_eta = max(n, *eta);
     } while (max_eta > 0.75 * (1 - e1 - e2) and beta > 0);
 
-    del(n, prefixP);
+    del(n, P);
     delete[] J; J = NULL;
     delete[] cnt; cnt = NULL;
-    delete[] oldQ; oldQ = NULL;
-    delete[] newQ; newQ = NULL;
+    delete[] Q; Q = NULL;
+    delete[] inQ; inQ = NULL;
+
+    // TODO: Add check for eta (I - P) = beta J
 
     return beta;
 }
@@ -250,7 +229,8 @@ double Lsolver::computeZstar(int n, const double *eta, const double *d) {
     for (int i = 0; i < n; ++i) {
         zstar += eta[i]/d[i];
     }
-    return -zstar;
+    auto sum_d = sum(n, d);
+    return -zstar*(sum_d/n);
 }
 
 void Lsolver::computeCanonicalSolution(
@@ -268,7 +248,7 @@ void Lsolver::computeCanonicalSolution(
 
     *x = new double[n];
     for (int i = 0; i < n; ++i) {
-        (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar*(d[i]/sum_d));
+        (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar/sum_d);
     }
     std::cerr << "Sum of x: " << sum(n, *x) << std::endl;
 }
