@@ -7,41 +7,15 @@
 #include <iostream>
 #include <algorithm>
 
-double computeErrorForLaplacian(const Graph *g, const double *b, double *x) {
-    int n = g->getNumVertex();
-    double **L = new double*[n];
-    for (int i = 0; i < n; ++i) {
-        L[i] = new double[n];
-    }
-    g->copyLaplacianMatrix(L);
-
-    // Rel error: Lx, b
-    double sumOfSquareError = 0;
-    for (int i = 0; i < n; ++i) {
-        double error = -b[i];
-        for (int j = 0; j < n; ++j) {
-            error += L[i][j]*x[j];
-        }
-        error /= b[i];
-        sumOfSquareError += (error * error);
-
-        delete[] L[i];
-    }
-    delete[] L;
-    return sqrt(sumOfSquareError/n);
-}
-
 void Lsolver::solve(const Graph *g, const double *b, double **x) {
     double *eta = NULL;
     auto beta = computeQueueOccupancyProbabilityAtStationarity(g, b, &eta);
+
     assert(eta != NULL);
     assert(beta > 0 and beta <= 1);
 
     computeCanonicalSolution(g, b, eta, beta, x);
     delete[] eta; eta = NULL;
-
-    auto error = computeErrorForLaplacian(g, b, *x);
-    std::cerr << "Beta: " << beta << "\nLaplacian Error: " << error << std::endl;
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
@@ -89,6 +63,7 @@ void del(int n, T **P) {
 
 std::mt19937 rng;
 std::uniform_real_distribution<double> dist(0, 1);
+
 inline bool trueWithProbability(double p) {
     return dist(rng) <= p;
 }
@@ -122,7 +97,7 @@ void Lsolver::transmitPackets(
 
 bool Lsolver::hasConverged(int n, int *inQ) {
     int numberOfNodesWithUnstableQueue = 0;
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n - 1; ++i) {
         if (inQ[i] != 0) {
             ++numberOfNodesWithUnstableQueue;
         }
@@ -202,21 +177,6 @@ void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
     }
 }
 
-double computeErrorForDCP(
-        int n, double *eta, double **P, double beta, double *J) {
-    // Rel error: (I - P)^T X eta, beta X J
-    double sumOfSquareError = 0;
-    for (int i = 0; i < n; ++i) {
-        double error = -beta * J[i];
-        for (int j = 0; j < n; ++j) {
-            error += ((i == j) - P[i][j]) * eta[j];
-        }
-        error /= (beta*J[i]);
-        sumOfSquareError += error * error;
-    }
-    return sqrt(sumOfSquareError/n);
-}
-
 double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
         const Graph *g, const double *b, double **eta) {
 
@@ -251,30 +211,25 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
                 n, prefixP, cnt, Q, inQ, beta, J, T_samp, *eta);
 
         max_eta = max(n, *eta);
-        std::cerr << "Beta = " << beta << "; MAX eta = " << max_eta << std::endl;
+        std::cerr << "Beta = " << beta << "; Max eta = " << max_eta << std::endl;
     } while (max_eta > 0.75 * (1 - e1 - e2) and beta > 0);
-
-    delete[] Q; Q = NULL;
-    delete[] cnt; cnt = NULL;
-    delete[] inQ; inQ = NULL;
-
-    //g->copyTransitionMatrix(prefixP)
-    //auto error = computeErrorForDCP(n, *eta, prefixP, beta, J);
-    //std::cerr << "DCP Error: " << error << std::endl;
 
     del(n, prefixP);
     delete[] J; J = NULL;
+    delete[] Q; Q = NULL;
+    delete[] cnt; cnt = NULL;
+    delete[] inQ; inQ = NULL;
 
     return beta;
 }
 
 double Lsolver::computeZstar(int n, const double *eta, const double *d) {
-    double zstar = 0;
+    double sumOfEtaByD = 0;
     for (int i = 0; i < n; ++i) {
-        zstar += eta[i]/d[i];
+        sumOfEtaByD += eta[i]/d[i];
     }
-    auto sum_d = sum(n, d);
-    return -zstar*(sum_d/n);
+    auto zstar = -sumOfEtaByD/n;
+    return -zstar;
 }
 
 void Lsolver::computeCanonicalSolution(
@@ -293,7 +248,7 @@ void Lsolver::computeCanonicalSolution(
     *x = new double[n];
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar/sum_d);
+        (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar);
     }
 
     delete[] d;
