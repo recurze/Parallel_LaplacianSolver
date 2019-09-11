@@ -5,6 +5,7 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <functional>
 
 void in(const char *fname, Graph **g, double **b);
 void out(const char *fname, int n, double *x);
@@ -74,9 +75,32 @@ bool noSelfLoops(int n, double **A) {
     return true;
 }
 
+bool isConnected(int n, double **A) {
+    bool *visited = new bool[n];
+    std::fill(visited, visited + n, false);
+
+    std::function<void(int)> dfs = [&](int u) {
+        visited[u] = true;
+        for (int v = 0; v < n; ++v) {
+            if (A[u][v] > EPS and not visited[v]) {
+                dfs(v);
+            }
+        }
+    };
+
+    dfs(0);
+    for (int i = 0; i < n; ++i) {
+        if (not visited[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 inline void checkValidGraph(int n, double **A) {
     assert(isSymmetric(n, A));
     assert(isPositiveWeighted(n, A));
+    assert(isConnected(n, A));
     assert(noSelfLoops(n, A));
 }
 
