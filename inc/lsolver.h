@@ -26,11 +26,11 @@ private:
 
     void generateNewPackets(int n, int *Q, double beta, const double *J);
 
+    int pickRandomNeighbor(int n, double *prefixPi);
     void transmitPackets(int n, double **prefixP, int *oldQ, int *newQ);
-    void transmitToRandomNeighbor(int n, double *prefixPi, int *Q, int qid);
 
     void estimateQueueOccupancyProbability(
-            int n, double **P, int *cnt, int *Q, int *inQ,
+            int n, double **prefixP, int *cnt, int *Q, int *inQ,
             double beta, const double *J, double T_samp, double *eta);
 
     void computeCanonicalSolution(

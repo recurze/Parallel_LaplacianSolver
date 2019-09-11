@@ -1,5 +1,6 @@
 #include "lsolver.h"
 
+#include "omp.h"
 #include <cmath>
 #include <random>
 #include <cassert>
@@ -14,10 +15,12 @@ double computeErrorForLaplacian(const Graph *g, const double *b, double *x) {
     }
     g->copyLaplacianMatrix(L);
 
-    // RMS of (Lx - b)
+    // Rel error: Lx, b
+    double norm_b = 0;
     double sumOfSquareError = 0;
     for (int i = 0; i < n; ++i) {
         double error = -b[i];
+        norm_b += error * error;
         for (int j = 0; j < n; ++j) {
             error += L[i][j]*x[j];
         }
@@ -42,6 +45,7 @@ void Lsolver::solve(const Graph *g, const double *b, double **x) {
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         J[i] = -b[i]/b[n - 1];
     }
@@ -69,6 +73,7 @@ T sum(int n, const T *a) {
 
 template <typename T>
 void addArray(int n, T *a, const T *b) {
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         a[i] += b[i];
     }
@@ -90,6 +95,7 @@ inline bool trueWithProbability(double p) {
 
 void Lsolver::generateNewPackets(
         int n, int *Q, double beta, const double *J) {
+#pragma omp parallel for
     for (int i = 0; i < n - 1; ++i) {
         if (trueWithProbability(beta * J[i])) {
             ++Q[i];
@@ -97,14 +103,18 @@ void Lsolver::generateNewPackets(
     }
 }
 
+int Lsolver::pickRandomNeighbor(int n, double *prefixPi) {
+    auto rand = dist(rng);
+    return std::upper_bound(prefixPi, prefixPi + n, rand) - prefixPi;
+}
+
 void Lsolver::transmitPackets(
-        int n, double **P, int *Q, int *inQ) {
+        int n, double **prefixP, int *Q, int *inQ) {
+#pragma omp parallel for
     for (int i = 0; i < n - 1; ++i) {
-        for (int j = 0; Q[i] > 0 and j < n; ++j) {
-            if (trueWithProbability(P[i][j])) {
-                --Q[i];
-                ++inQ[j];
-            }
+        if (Q[i] > 0) {
+            --Q[i];
+            ++inQ[pickRandomNeighbor(n, prefixP[i])];
         }
     }
 }
@@ -112,7 +122,7 @@ void Lsolver::transmitPackets(
 bool Lsolver::hasConverged(int n, int *inQ) {
     int numberOfNodesWithUnstableQueue = 0;
     for (int i = 0; i < n; ++i) {
-        if (inQ[i] > 0.05*n) {
+        if (inQ[i] != 0) {
             ++numberOfNodesWithUnstableQueue;
         }
     }
@@ -120,6 +130,7 @@ bool Lsolver::hasConverged(int n, int *inQ) {
 }
 
 void Lsolver::updateCnt(int n, int *Q, int *cnt) {
+#pragma omp parallel for
     for (int i = 0; i < n - 1; ++i) {
         if (Q[i] > 0) {
             ++cnt[i];
@@ -127,23 +138,32 @@ void Lsolver::updateCnt(int n, int *Q, int *cnt) {
     }
 }
 
+template <typename T>
+void fill(int n, T *a, T x) {
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        a[i] = x;
+    }
+}
+
 void Lsolver::estimateQueueOccupancyProbability(
-        int n, double **P, int *cnt, int *Q, int *inQ,
+        int n, double **prefixP, int *cnt, int *Q, int *inQ,
         double beta, const double *J, double T_samp, double *eta) {
 
     rng.seed(std::random_device{}());
 
-    std::fill(Q, Q + n, 0);
-    std::fill(cnt, cnt + n, 0);
+
+    fill(n, Q, 0);
+    fill(n, cnt, 0);
 
     int T = 0;
     bool converged = false;
     bool completed = false; // completed when converged and sampled
     do {
-        std::fill(inQ, inQ + n, 0);
+        fill(n, inQ, 0);
 
         generateNewPackets(n, Q, beta, J);
-        transmitPackets(n, P, Q, inQ);
+        transmitPackets(n, prefixP, Q, inQ);
         addArray(n, Q, inQ);
 
         if (not converged) {
@@ -155,6 +175,7 @@ void Lsolver::estimateQueueOccupancyProbability(
         }
     } while(!completed);
 
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         eta[i] = cnt[i]/T_samp;
     }
@@ -168,8 +189,24 @@ void initNewMemory2d(int n, int m, T*** A) {
     }
 }
 
-double computeErrorForDCP(int n, double *eta, double **P, double beta, double *J) {
-    // RMS of ((I - P)^T X eta = beta J)
+
+template <typename T>
+void replaceArrayWithPrefixSum(int n, T* A) {
+    for (int i = 1; i < n; ++i) {
+        A[i] += A[i - 1];
+    }
+}
+
+void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
+    g->copyTransitionMatrix(prefixP);
+    for (int i = 0; i < n; ++i) {
+        replaceArrayWithPrefixSum(n, prefixP[i]);
+    }
+}
+
+double computeErrorForDCP(
+        int n, double *eta, double **P, double beta, double *J) {
+    // RMS error: (I - P)^T X eta, beta X J
     double sumOfSquareError = 0;
     for (int i = 0; i < n; ++i) {
         double error = -beta * J[i];
@@ -191,9 +228,9 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     double *J = new double[n];
     computeJ(n, b, J);
 
-    double **P = NULL;
-    initNewMemory2d(n, n, &P);
-    g->copyTransitionMatrix(P);
+    double **prefixP = NULL;
+    initNewMemory2d(n, n, &prefixP);
+    computePrefixP(n, g, prefixP);
 
     int *cnt  = new int[n];
 
@@ -207,20 +244,20 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
         beta /= 2;
 
         estimateQueueOccupancyProbability(
-                n, P, cnt, Q, inQ, beta, J, T_samp, *eta);
+                n, prefixP, cnt, Q, inQ, beta, J, T_samp, *eta);
 
-        std::cerr << "Beta = " << beta << std::endl;
         max_eta = max(n, *eta);
+        std::cerr << "Beta = " << beta << "; MAX eta = " << max_eta << std::endl;
     } while (max_eta > 0.75 * (1 - e1 - e2) and beta > 0);
 
     delete[] Q; Q = NULL;
     delete[] cnt; cnt = NULL;
     delete[] inQ; inQ = NULL;
 
-    auto error = computeErrorForDCP(n, *eta, P, beta, J);
-    std::cerr << "DCP Error: " << error << std::endl;
+    //auto error = computeErrorForDCP(n, *eta, P, beta, J);
+    //std::cerr << "DCP Error: " << error << std::endl;
 
-    del(n, P);
+    del(n, prefixP);
     delete[] J; J = NULL;
 
     return beta;
@@ -249,6 +286,7 @@ void Lsolver::computeCanonicalSolution(
     auto sum_d = sum(n, d);
 
     *x = new double[n];
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar/sum_d);
     }
