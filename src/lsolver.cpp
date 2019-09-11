@@ -229,7 +229,7 @@ double Lsolver::computeZstar(int n, const double *eta, const double *d) {
         sumOfEtaByD += eta[i]/d[i];
     }
     auto zstar = -sumOfEtaByD/n;
-    return -zstar;
+    return zstar;
 }
 
 void Lsolver::computeCanonicalSolution(
@@ -242,8 +242,6 @@ void Lsolver::computeCanonicalSolution(
     g->copyDegreeMatrix(d);
 
     auto zstar = computeZstar(n, eta, d);
-
-    auto sum_d = sum(n, d);
 
     *x = new double[n];
 #pragma omp parallel for
