@@ -6,7 +6,7 @@
 #include <iostream>
 #include <algorithm>
 
-double computeError(const Graph *g, const double *b, double *x) {
+double computeErrorForLaplacian(const Graph *g, const double *b, double *x) {
     int n = g->getNumVertex();
     double **L = new double*[n];
     for (int i = 0; i < n; ++i) {
@@ -22,7 +22,9 @@ double computeError(const Graph *g, const double *b, double *x) {
             error += L[i][j]*x[j];
         }
         sumOfSquareError += (error * error);
+        delete[] L[i];
     }
+    delete[] L;
     return sqrt(sumOfSquareError/n);
 }
 
@@ -35,8 +37,8 @@ void Lsolver::solve(const Graph *g, const double *b, double **x) {
     computeCanonicalSolution(g, b, eta, beta, x);
     delete[] eta; eta = NULL;
 
-    auto error = computeError(g, b, *x);
-    std::cerr << "Beta: " << beta << "\nError: " << error << std::endl;
+    auto error = computeErrorForLaplacian(g, b, *x);
+    std::cerr << "Beta: " << beta << "\nLaplacian Error: " << error << std::endl;
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
@@ -88,7 +90,6 @@ inline bool trueWithProbability(double p) {
 
 void Lsolver::generateNewPackets(
         int n, int *Q, double beta, const double *J) {
-
     for (int i = 0; i < n - 1; ++i) {
         if (trueWithProbability(beta * J[i])) {
             ++Q[i];
@@ -98,7 +99,6 @@ void Lsolver::generateNewPackets(
 
 void Lsolver::transmitPackets(
         int n, double **P, int *Q, int *inQ) {
-
     for (int i = 0; i < n - 1; ++i) {
         for (int j = 0; Q[i] > 0 and j < n; ++j) {
             if (trueWithProbability(P[i][j])) {
@@ -168,7 +168,7 @@ void initNewMemory2d(int n, int m, T*** A) {
     }
 }
 
-double compute(int n, double *eta, double **P, double beta, double *J) {
+double computeErrorForDCP(int n, double *eta, double **P, double beta, double *J) {
     // RMS of ((I - P)^T X eta = beta J)
     double sumOfSquareError = 0;
     for (int i = 0; i < n; ++i) {
@@ -209,17 +209,19 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
         estimateQueueOccupancyProbability(
                 n, P, cnt, Q, inQ, beta, J, T_samp, *eta);
 
-        std::cerr << beta << std::endl;
+        std::cerr << "Beta = " << beta << std::endl;
         max_eta = max(n, *eta);
     } while (max_eta > 0.75 * (1 - e1 - e2) and beta > 0);
 
-    del(n, P);
-    delete[] J; J = NULL;
-    delete[] cnt; cnt = NULL;
     delete[] Q; Q = NULL;
+    delete[] cnt; cnt = NULL;
     delete[] inQ; inQ = NULL;
 
-    // TODO: Add check for eta (I - P) = beta J
+    auto error = computeErrorForDCP(n, *eta, P, beta, J);
+    std::cerr << "DCP Error: " << error << std::endl;
+
+    del(n, P);
+    delete[] J; J = NULL;
 
     return beta;
 }
@@ -250,5 +252,7 @@ void Lsolver::computeCanonicalSolution(
     for (int i = 0; i < n; ++i) {
         (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar/sum_d);
     }
+
+    delete[] d;
     std::cerr << "Sum of x: " << sum(n, *x) << std::endl;
 }
