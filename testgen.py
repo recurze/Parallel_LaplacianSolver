@@ -54,22 +54,70 @@ def generate_randomb(n):
     b.append(-sum(b))
     return b
 
+def getL(A):
+    D = [sum(row) for row in A]
+    n = len(A)
+    L = []
+    for i in range(n):
+        l = [-x for x in A[i]]
+        l[i] = D[i]
+        L.append(l)
+    return L
+
+
+def solve(A, b):
+    L = np.array(getL(A))
+    print(L)
+    print(np.linalg.det(L))
+    b = np.array(b)
+    x = np.linalg.solve(L, b)
+    print(np.sum(x))
+    return x
+
+def readIn(ifname):
+    with open(ifname) as f:
+        content = f.readlines()
+    content = [x.strip() for x in content]
+    n = int(content[0])
+    A = []
+    for i in range(n):
+        A.append([float(x) for x in content[i + 1].split()])
+    b = [float(x) for x in content[n + 1].split()]
+    return getL(A), b
+
+def readOut(ofname):
+    with open(ofname) as f:
+        content = f.readlines()
+    content = [x.strip() for x in content]
+    return [float(i) for i in content[0].split()]
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage:\n ./testgen.py n")
-        exit(0)
+    if len(sys.argv) == 2:
+        n = int(sys.argv[1])
+        m = random.randint(n - 1, n*(n - 1)/2)
+        A = generate_undirectedWeightedConnectedGraph(n, m)
+        b = generate_randomb(n)
 
-    n = int(sys.argv[1])
-    m = random.randint(n - 1, n*(n - 1)/2)
-    A = generate_undirectedWeightedConnectedGraph(n, m)
-    b = generate_randomb(n)
+        ifname = str(n) + '.inp'
+        with open(ifname, 'w') as f:
+            print(n, file=f)
+            for i in range(n):
+                for j in range(n):
+                    print(A[i][j], end = " " if j < n - 1 else '', file = f)
+                print("", file = f)
+            for i in range(n):
+                print(b[i], end = " " if i < n - 1 else '', file = f)
+        print(solve(A, b))
+    if len(sys.argv) == 3:
+        ifname = sys.argv[1]
+        ofname = sys.argv[2]
+        L, b = readIn(ifname)
+        x = readOut(ofname)
 
-    ifname = str(n) + '.inp'
-    with open(ifname, 'w') as f:
-        print(n, file=f)
-        for i in range(n):
-            for j in range(n):
-                print(A[i][j], end = " " if j < n - 1 else '', file = f)
-            print("", file = f)
-        for i in range(n):
-            print(b[i], end = " " if i < n - 1 else '', file = f)
+        L = np.array(L)
+        x = np.array(x)
+        b = np.array(b)
+        print(b)
+        print(np.dot(L, x))
+        print(np.linalg.norm(np.dot(L, x)-b))
+
