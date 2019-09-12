@@ -20,7 +20,7 @@ import random
 import numpy as np
 from math import sqrt
 
-minw, maxw = 0.01, 100
+minw, maxw = 1, 100
 def generate_undirectedWeightedConnectedGraph(n, m):
     assert m >= n - 1 and m <= n*(n - 1)/2
 
@@ -54,14 +54,9 @@ def generate_undirectedWeightedConnectedGraph(n, m):
     add_random_edges(m - n + 1)
     return A
 
-minb, maxb = 0, 100
+minb, maxb = 1, 1000
 def generate_randomb(n):
-    b = []
-    for i in range(n - 1):
-        if random.uniform(0, 1) < 0.1:
-            b.append(random.randint(minb, maxb))
-        else:
-            b.append(0)
+    b = [random.randint(minb, maxb) for _ in range(n - 1)]
     b.append(-sum(b))
     return b
 
