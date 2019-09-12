@@ -102,7 +102,7 @@ bool Lsolver::hasConverged(int n, int *inQ) {
             ++numberOfNodesWithUnstableQueue;
         }
     }
-    return numberOfNodesWithUnstableQueue < 0.05*n;
+    return numberOfNodesWithUnstableQueue < e1*n;
 }
 
 void Lsolver::updateCnt(int n, int *Q, int *cnt) {
@@ -223,15 +223,6 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     return beta;
 }
 
-double Lsolver::computeZstar(int n, const double *eta, const double *d) {
-    double sumOfEtaByD = 0;
-    for (int i = 0; i < n; ++i) {
-        sumOfEtaByD += eta[i]/d[i];
-    }
-    auto zstar = -sumOfEtaByD/n;
-    return zstar;
-}
-
 void Lsolver::computeCanonicalSolution(
         const Graph *g, const double *b,
         double *eta, double beta, double **x) {
@@ -241,12 +232,15 @@ void Lsolver::computeCanonicalSolution(
     double* d = new double[n];
     g->copyDegreeMatrix(d);
 
-    auto zstar = computeZstar(n, eta, d);
-
     *x = new double[n];
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i] + zstar);
+        (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i]);
+    }
+
+    auto avg_x = sum(n, *x)/n;
+    for (int i = 0; i < n; ++i) {
+        (*x)[i] -= avg_x;
     }
 
     delete[] d;

@@ -18,8 +18,9 @@ File output:
 import sys
 import random
 import numpy as np
+from math import sqrt
 
-minw, maxw = 1, 1000
+minw, maxw = 0.01, 100
 def generate_undirectedWeightedConnectedGraph(n, m):
     assert m >= n - 1 and m <= n*(n - 1)/2
 
@@ -53,7 +54,7 @@ def generate_undirectedWeightedConnectedGraph(n, m):
     add_random_edges(m - n + 1)
     return A
 
-minb, maxb = 0, 100000
+minb, maxb = 0, 100
 def generate_randomb(n):
     b = [random.uniform(minb, maxb) for _ in range(n - 1)]
     b.append(-sum(b))
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         print("Example Usage: ./testgen.py 10")
         exit(0)
     n = int(sys.argv[1])
-    m = random.randint(n - 1, n*(n - 1)/2)
+    m = random.randint(n - 1, n*(n - 1)//2)
     A = generate_undirectedWeightedConnectedGraph(n, m)
     b = generate_randomb(n)
 

@@ -38,7 +38,7 @@ def computeSolution(A, b):
     L = np.array(computeLaplacian(A))
     b = np.array(b)
     x = np.linalg.lstsq(L, b, rcond = None)[0]
-    assert np.allclose(np.dot(L, x), b)
+    #assert np.allclose(np.dot(L, x), b)
     return x
 
 def readOutputFile(ofname):
@@ -49,19 +49,19 @@ def readOutputFile(ofname):
     return [float(i) for i in content[0].split()]
 
 def align(x, x_hat):
-    return x - np.min(x), x_hat - np.min(x_hat)
+    return x - np.mean(x), x_hat - np.mean(x_hat)
 
 if __name__ == "__main__":
     ifname = sys.argv[1]
     A, b = readInputFile(ifname)
 
-    x = computeSolution(A, b)
+    x = computeSolution(A, b)[:-1]
 
     ofname = sys.argv[2]
-    x_hat = readOutputFile(ofname)
+    x_hat = readOutputFile(ofname)[:-1]
 
-    x, x_hat = align(x, x_hat)
+    #x, x_hat = align(x, x_hat)
     print(x)
     print(x_hat)
-    print(np.linalg.norm(x - x_hat)/np.linalg.norm(x))
-
+    s = [(abs((i - j)/i))**2 for (i, j) in zip(x, x_hat) if i != 0]
+    print(sum(s)**0.5/len(s))

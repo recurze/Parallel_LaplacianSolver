@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     assert(b != NULL);
 
     double *x = NULL;
-    Lsolver().solve(g, b, &x);
+    Lsolver(0.1, 0.1, 0.1).solve(g, b, &x);
 
     assert(x != NULL);
 
