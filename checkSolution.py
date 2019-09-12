@@ -63,5 +63,4 @@ if __name__ == "__main__":
     #x, x_hat = align(x, x_hat)
     print(x)
     print(x_hat)
-    s = [(abs((i - j)/i))**2 for (i, j) in zip(x, x_hat) if i != 0]
-    print(sum(s)**0.5/len(s))
+    print(np.linalg.norm(x - x_hat)/np.linalg.norm(x))

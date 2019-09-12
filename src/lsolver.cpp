@@ -12,7 +12,7 @@ void Lsolver::solve(const Graph *g, const double *b, double **x) {
     auto beta = computeQueueOccupancyProbabilityAtStationarity(g, b, &eta);
 
     assert(eta != NULL);
-    assert(beta > 0 and beta <= 1);
+    assert(beta > 0);
 
     computeCanonicalSolution(g, b, eta, beta, x);
     delete[] eta; eta = NULL;
@@ -122,6 +122,14 @@ void fill(int n, T *a, T x) {
     }
 }
 
+template <typename T>
+void err(int n, T* A) {
+    for (int i = 0; i < n; ++i) {
+        std::cerr << A[i] << ' ';
+    }
+    std::cerr << '\n';
+}
+
 void Lsolver::estimateQueueOccupancyProbability(
         int n, double **prefixP, int *cnt, int *Q, int *inQ,
         double beta, const double *J, double T_samp, double *eta) {
@@ -129,12 +137,11 @@ void Lsolver::estimateQueueOccupancyProbability(
     fill(n, Q, 0);
     fill(n, cnt, 0);
 
-    int T = 0;
+    int T = 0, numIt = 0;
     bool converged = false;
     bool completed = false; // completed when converged and sampled
-    while (!completed) {
+    while (!completed and numIt < 1000000) {
         fill(n, inQ, 0);
-
         generateNewPackets(n, Q, beta, J);
         transmitPackets(n, prefixP, Q, inQ);
         addArray(n, Q, inQ);
@@ -146,11 +153,17 @@ void Lsolver::estimateQueueOccupancyProbability(
             updateCnt(n, Q, cnt);
             completed = (T > T_samp);
         }
+        ++numIt;
     }
+    std::cerr << numIt << " " << T_samp << std::endl;
 
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         eta[i] = cnt[i]/T_samp;
+    }
+
+    if (not converged) {
+        eta[0] = 1;
     }
 }
 
@@ -177,6 +190,16 @@ void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
     }
 }
 
+double maxJ(int n, double *J) {
+    double max = 0;
+    for (int i = 0; i < n; ++i) {
+        if (J[i] > max) {
+            max = J[i];
+        }
+    }
+    return max;
+}
+
 double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
         const Graph *g, const double *b, double **eta) {
 
@@ -184,7 +207,7 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
 
     int n = g->getNumVertex();
 
-    auto T_samp = 4*log(n) / (k*k*e2*e2);
+    auto T_samp = log(n) / (k*e2);
 
     double *J = new double[n];
     computeJ(n, b, J);
@@ -203,7 +226,7 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     int *inQ = new int[n];
 
     *eta = new double[n];
-    double beta = 1, max_eta;
+    double beta = 1.0/maxJ(n, J), max_eta;
     do {
         beta /= 2;
 
@@ -244,5 +267,4 @@ void Lsolver::computeCanonicalSolution(
     }
 
     delete[] d;
-    std::cerr << "Sum of x: " << sum(n, *x) << std::endl;
 }

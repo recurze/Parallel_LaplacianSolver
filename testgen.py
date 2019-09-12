@@ -56,7 +56,12 @@ def generate_undirectedWeightedConnectedGraph(n, m):
 
 minb, maxb = 0, 100
 def generate_randomb(n):
-    b = [random.uniform(minb, maxb) for _ in range(n - 1)]
+    b = []
+    for i in range(n - 1):
+        if random.uniform(0, 1) < 0.1:
+            b.append(random.randint(minb, maxb))
+        else:
+            b.append(0)
     b.append(-sum(b))
     return b
 
