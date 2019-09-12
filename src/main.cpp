@@ -8,7 +8,7 @@
 #include <functional>
 
 void in(const char *fname, Graph **g, double **b);
-void out(const char *fname, int n, double *x);
+void out(const char *fname, int n, double *x, double c);
 
 int main(int argc, char **argv) {
     if (argc != 3) {
@@ -24,8 +24,9 @@ int main(int argc, char **argv) {
     assert(g != NULL);
     assert(b != NULL);
 
+    double c;
     double *x = NULL;
-    Lsolver(0.1, 0.1, 0.1).solve(g, b, &x);
+    Lsolver(0.1, 0.1, 0.1).solve(g, b, &x, &c);
 
     assert(x != NULL);
 
@@ -35,7 +36,7 @@ int main(int argc, char **argv) {
     delete g; g = NULL;
 
     char *ofname = argv[2];
-    out(ofname, n, x);
+    out(ofname, n, x, c);
 
     delete[] x; x = NULL;
 
@@ -142,8 +143,9 @@ void in(const char *fname, Graph **g, double **b) {
     checkValidb(n, *b);
 }
 
-void out(const char *fname, int n, double *x) {
+void out(const char *fname, int n, double *x, double c) {
     std::ofstream outfile(fname);
+    outfile << c << '\n';
     for (int i = 0; i < n; ++i) {
         outfile << x[i] << (i == n - 1 ? '\n' : ' ');
     }

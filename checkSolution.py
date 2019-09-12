@@ -34,9 +34,12 @@ def computeLaplacian(A):
     d = [sum(row) for row in A]
     return np.diag(d) - np.array(A)
 
-def computeSolution(A, b):
+def computeSolution(A, b, c):
     L = np.array(computeLaplacian(A))
     b = np.array(b)
+
+    b[-1] *= c
+
     x = np.linalg.lstsq(L, b, rcond = None)[0]
     #assert np.allclose(np.dot(L, x), b)
     return x
@@ -46,21 +49,25 @@ def readOutputFile(ofname):
     with open(ofname) as f:
         content = f.readlines()
     content = [x.strip() for x in content]
-    return [float(i) for i in content[0].split()]
+    c = float(content[0])
+    x = np.array([float(i) for i in content[1].split()])
+    return c, x
 
 def align(x, x_hat):
-    return x - np.mean(x), x_hat - np.mean(x_hat)
+    return x - np.min(x), x_hat - np.min(x_hat)
 
 if __name__ == "__main__":
+    np.set_printoptions(suppress=True)
     ifname = sys.argv[1]
     A, b = readInputFile(ifname)
 
-    x = computeSolution(A, b)[:-1]
-
     ofname = sys.argv[2]
-    x_hat = readOutputFile(ofname)[:-1]
+    c, x_hat = readOutputFile(ofname)
 
-    #x, x_hat = align(x, x_hat)
+    x = computeSolution(A, b, c)
+
+    x, x_hat = align(x, x_hat)
     print(x)
     print(x_hat)
-    print(np.linalg.norm(x - x_hat)/np.linalg.norm(x))
+    print("Rel error: ", end = " ")
+    print(np.linalg.norm(x_hat - x)/np.linalg.norm(x))

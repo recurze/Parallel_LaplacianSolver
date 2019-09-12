@@ -7,12 +7,17 @@
 #include <iostream>
 #include <algorithm>
 
-void Lsolver::solve(const Graph *g, const double *b, double **x) {
+void Lsolver::solve(const Graph *g, const double *b, double **x, double *c) {
+    double y;
+    double beta;
     double *eta = NULL;
-    auto beta = computeQueueOccupancyProbabilityAtStationarity(g, b, &eta);
+    computeQueueOccupancyProbabilityAtStationarity(g, b, &eta, &beta, &y);
 
     assert(eta != NULL);
     assert(beta > 0);
+
+    *c = y/beta;
+    std::cerr << "C: " << *c << std::endl;
 
     computeCanonicalSolution(g, b, eta, beta, x);
     delete[] eta; eta = NULL;
@@ -137,10 +142,13 @@ void Lsolver::estimateQueueOccupancyProbability(
     fill(n, Q, 0);
     fill(n, cnt, 0);
 
-    int T = 0, numIt = 0;
+    int T = 0;
+    int numIt = 0;
+    int maxIt = n;
+
     bool converged = false;
     bool completed = false; // completed when converged and sampled
-    while (!completed and numIt < 1000000) {
+    while (!completed and numIt < maxIt) {
         fill(n, inQ, 0);
         generateNewPackets(n, Q, beta, J);
         transmitPackets(n, prefixP, Q, inQ);
@@ -190,23 +198,23 @@ void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
     }
 }
 
-double maxJ(int n, double *J) {
-    double max = 0;
+double Lsolver::computeY(
+        int n, const Graph *g, double **P, const double *eta) {
+    g->copyTransitionMatrix(P);
+    double y = 0;
     for (int i = 0; i < n; ++i) {
-        if (J[i] > max) {
-            max = J[i];
-        }
+        y += P[n - 1][i] * eta[i];
     }
-    return max;
+    return y;
 }
 
-double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
-        const Graph *g, const double *b, double **eta) {
+void Lsolver::computeQueueOccupancyProbabilityAtStationarity(
+        const Graph *g, const double *b,
+        double **eta, double *beta, double *y) {
 
     rng.seed(std::random_device{}());
 
     int n = g->getNumVertex();
-
     auto T_samp = log(n) / (k*e2);
 
     double *J = new double[n];
@@ -226,24 +234,30 @@ double Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     int *inQ = new int[n];
 
     *eta = new double[n];
-    double beta = 1.0/maxJ(n, J), max_eta;
+    double max_eta = 0;
+
+    // choose beta such that it's less that beta* (which we don't know)
+    // but not too small else packets won't be generated
+    // So start with INF or at least
+    *beta = 1.0/max(n, J);
     do {
-        beta /= 2;
+        *beta /= 2;
 
         estimateQueueOccupancyProbability(
-                n, prefixP, cnt, Q, inQ, beta, J, T_samp, *eta);
+                n, prefixP, cnt, Q, inQ, *beta, J, T_samp, *eta);
 
         max_eta = max(n, *eta);
-        std::cerr << "Beta = " << beta << "; Max eta = " << max_eta << std::endl;
-    } while (max_eta > 0.75 * (1 - e1 - e2) and beta > 0);
+        std::cerr << "Beta = " << *beta << "; Max eta = " << max_eta << std::endl;
+    } while (max_eta > 0.75 * (1 - e1 - e2) and *beta > 0);
 
-    del(n, prefixP);
     delete[] J; J = NULL;
     delete[] Q; Q = NULL;
     delete[] cnt; cnt = NULL;
     delete[] inQ; inQ = NULL;
 
-    return beta;
+    *y = computeY(n, g, prefixP, *eta);
+
+    del(n, prefixP);
 }
 
 void Lsolver::computeCanonicalSolution(
