@@ -14,6 +14,7 @@ Console output:
 '''
 
 import sys
+import time
 import numpy as np
 
 def readInputFile(ifname):
@@ -38,7 +39,7 @@ def computeSolution(A, b, c):
     L = np.array(computeLaplacian(A))
     b = np.array(b)
 
-    b[-1] *= c
+    if c < 1: b[-1] *= c
 
     x = np.linalg.lstsq(L, b, rcond = None)[0]
     #assert np.allclose(np.dot(L, x), b)
@@ -64,10 +65,12 @@ if __name__ == "__main__":
     ofname = sys.argv[2]
     c, x_hat = readOutputFile(ofname)
 
+    start_time = time.time()
     x = computeSolution(A, b, c)
+    end_time = time.time()
+    print("lstsq Time: ", end_time - start_time)
 
     x, x_hat = align(x, x_hat)
-    print(x)
-    print(x_hat)
-    print("Rel error: ", end = " ")
-    print(np.linalg.norm(x_hat - x)/np.linalg.norm(x))
+    #print(x)
+    #print(x_hat)
+    print("Rel error: ", np.linalg.norm(x_hat - x)/np.linalg.norm(x))

@@ -8,6 +8,8 @@
 #include <algorithm>
 
 void Lsolver::solve(const Graph *g, const double *b, double **x, double *c) {
+    auto start_time = omp_get_wtime();
+
     double y;
     double beta;
     double *eta = NULL;
@@ -17,10 +19,16 @@ void Lsolver::solve(const Graph *g, const double *b, double **x, double *c) {
     assert(beta > 0);
 
     *c = y/beta;
-    std::cerr << "C: " << *c << std::endl;
 
     computeCanonicalSolution(g, b, eta, beta, x);
     delete[] eta; eta = NULL;
+
+    auto end_time = omp_get_wtime();
+
+    std::cerr << "Beta: " << beta
+              << "\nC: " << *c
+              << "\nTime: " << end_time - start_time
+              << "\n";
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
@@ -95,6 +103,7 @@ void Lsolver::transmitPackets(
     for (int i = 0; i < n - 1; ++i) {
         if (Q[i] > 0) {
             --Q[i];
+#pragma omp atomic
             ++inQ[pickRandomNeighbor(n, prefixP[i])];
         }
     }
@@ -127,14 +136,6 @@ void fill(int n, T *a, T x) {
     }
 }
 
-template <typename T>
-void err(int n, T* A) {
-    for (int i = 0; i < n; ++i) {
-        std::cerr << A[i] << ' ';
-    }
-    std::cerr << '\n';
-}
-
 void Lsolver::estimateQueueOccupancyProbability(
         int n, double **prefixP, int *cnt, int *Q, int *inQ,
         double beta, const double *J, double T_samp, double *eta) {
@@ -144,7 +145,7 @@ void Lsolver::estimateQueueOccupancyProbability(
 
     int T = 0;
     int numIt = 0;
-    int maxIt = n;
+    int maxIt = 4*T_samp;
 
     bool converged = false;
     bool completed = false; // completed when converged and sampled
@@ -163,7 +164,6 @@ void Lsolver::estimateQueueOccupancyProbability(
         }
         ++numIt;
     }
-    std::cerr << numIt << " " << T_samp << std::endl;
 
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
@@ -193,6 +193,7 @@ void replaceArrayWithPrefixSum(int n, T* A) {
 
 void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
     g->copyTransitionMatrix(prefixP);
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         replaceArrayWithPrefixSum(n, prefixP[i]);
     }
@@ -215,7 +216,7 @@ void Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     rng.seed(std::random_device{}());
 
     int n = g->getNumVertex();
-    auto T_samp = log(n) / (k*e2);
+    auto T_samp = 4*log(n) / (k*e2);
 
     double *J = new double[n];
     computeJ(n, b, J);
@@ -239,7 +240,7 @@ void Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     // choose beta such that it's less that beta* (which we don't know)
     // but not too small else packets won't be generated
     // So start with INF or at least
-    *beta = 1.0/max(n, J);
+    *beta = 100;
     do {
         *beta /= 2;
 
@@ -247,7 +248,6 @@ void Lsolver::computeQueueOccupancyProbabilityAtStationarity(
                 n, prefixP, cnt, Q, inQ, *beta, J, T_samp, *eta);
 
         max_eta = max(n, *eta);
-        std::cerr << "Beta = " << *beta << "; Max eta = " << max_eta << std::endl;
     } while (max_eta > 0.75 * (1 - e1 - e2) and *beta > 0);
 
     delete[] J; J = NULL;

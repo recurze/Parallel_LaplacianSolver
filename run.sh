@@ -1,9 +1,10 @@
 #!/bin/bash
 
-if [ ! -f $1.inp ]; then
-    ./testgen.py $1
-fi
+for i in 10 25 50 100 250 500 1000 2500 5000 10000
+do
+    ./testgen.py $i
 
-make -j -k -s && \
-./main $1.inp $1.out && \
-./checkSolution.py $1.inp $1.out
+    make -j -k -s && \
+    ./main $i.inp $i.out;
+    ./checkSolution.py $i.inp $i.out
+done
