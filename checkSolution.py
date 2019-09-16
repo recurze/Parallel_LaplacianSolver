@@ -18,57 +18,49 @@ import time
 import numpy as np
 
 def readInputFile(ifname):
-    content = []
     with open(ifname) as f:
-        content = f.readlines()
-    content = [x.strip() for x in content]
+        content = [x.strip() for x in f.readlines()]
 
-    n = int(content[0])
-    A = []
-    for i in range(n):
-        A.append([float(x) for x in content[i + 1].split()])
-    b = [float(x) for x in content[n + 1].split()]
+        n = int(content[0])
+        A = []
+        for i in range(n):
+            A.append([float(x) for x in content[i + 1].split()])
+        b = [float(x) for x in content[n + 1].split()]
 
-    return A, b
+        return A, b
 
 def computeLaplacian(A):
     d = [sum(row) for row in A]
     return np.diag(d) - np.array(A)
 
-def computeSolution(A, b, c):
+def computeSolution(A, b):
     L = np.array(computeLaplacian(A))
     b = np.array(b)
 
-    if c < 1: b[-1] *= c
-
     x = np.linalg.lstsq(L, b, rcond = None)[0]
-    #assert np.allclose(np.dot(L, x), b)
+    assert np.allclose(np.dot(L, x), b)
     return x
 
 def readOutputFile(ofname):
-    content = []
     with open(ofname) as f:
-        content = f.readlines()
-    content = [x.strip() for x in content]
-    c = float(content[0])
-    x = np.array([float(i) for i in content[1].split()])
-    return c, x
+        content = [x.strip() for x in f.readlines()]
+
+        x = np.array([float(i) for i in content[0].split()])
+        return x
 
 def align(x, x_hat):
     return x - np.min(x), x_hat - np.min(x_hat)
 
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
+
     ifname = sys.argv[1]
     A, b = readInputFile(ifname)
+    x = computeSolution(A, b)
 
     ofname = sys.argv[2]
-    c, x_hat = readOutputFile(ofname)
+    x_hat = readOutputFile(ofname)
 
-    start_time = time.time()
-    x = computeSolution(A, b, c)
-    end_time = time.time()
-    print("lstsq Time: ", end_time - start_time)
 
     x, x_hat = align(x, x_hat)
     #print(x)

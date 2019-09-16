@@ -4,58 +4,18 @@
 #include <cmath>
 #include <random>
 #include <cassert>
+#include <numeric>
 #include <iostream>
 #include <algorithm>
 
-void Lsolver::solve(const Graph *g, const double *b, double **x, double *c) {
-    auto start_time = omp_get_wtime();
-
-    double y;
-    double beta;
-    double *eta = NULL;
-    computeQueueOccupancyProbabilityAtStationarity(g, b, &eta, &beta, &y);
-
-    assert(eta != NULL);
-    assert(beta > 0);
-
-    *c = y/beta;
-
-    computeCanonicalSolution(g, b, eta, beta, x);
-    delete[] eta; eta = NULL;
-
-    auto end_time = omp_get_wtime();
-
-    std::cerr << "Beta: " << beta
-              << "\nC: " << *c
-              << "\nTime: " << end_time - start_time
-              << "\n";
-}
-
-void Lsolver::computeJ(int n, const double *b, double *J) {
-#pragma omp parallel for
-    for (int i = 0; i < n; ++i) {
-        J[i] = -b[i]/b[n - 1];
-    }
+template <typename T>
+inline T max(int n, const T *a) {
+    return *std::max_element(a, a + n);
 }
 
 template <typename T>
-T max(int n, const T *a) {
-    T max_a = 0;
-    for (int i = 0; i < n; ++i) {
-        if (max_a < a[i]) {
-            max_a = a[i];
-        }
-    }
-    return max_a;
-}
-
-template <typename T>
-T sum(int n, const T *a) {
-    T sum_a = 0;
-    for (int i = 0; i < n; ++i) {
-        sum_a += a[i];
-    }
-    return sum_a;
+inline T sum(int n, const T *a) {
+    return std::accumulate(a, a + n, (T) 0);
 }
 
 template <typename T>
@@ -67,11 +27,53 @@ void addArray(int n, T *a, const T *b) {
 }
 
 template <typename T>
+void fill(int n, T *a, const T& x) {
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        a[i] = x;
+    }
+}
+
+template <typename T>
+void initNewMemory2d(int n, T*** A) {
+    *A = new T*[n];
+    for (int i = 0; i < n; ++i) {
+        (*A)[i] = new T[n];
+    }
+}
+
+template <typename T>
 void del(int n, T **P) {
     for (int i = 0; i < n; ++i) {
         delete[] P[i];
     }
     delete[] P;
+}
+
+void Lsolver::solve(const Graph *g, const double *b, double **x) {
+    auto start_time = omp_get_wtime();
+
+    double *eta = NULL;
+    auto beta = computeEtaAtStationarity(g, b, &eta);
+
+    assert(eta != NULL);
+    assert(beta > 0);
+
+    computeCanonicalSolution(g, b, eta, beta, x);
+    delete[] eta; eta = NULL;
+
+    auto end_time = omp_get_wtime();
+
+    std::cerr << "Beta: " << beta
+              << "\nTime: " << end_time - start_time
+              << "\n";
+}
+
+void Lsolver::computeJ(int n, const double *b, double *J) {
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        J[i] = -b[i]/b[n - 1];
+    }
 }
 
 std::mt19937 rng;
@@ -92,7 +94,7 @@ void Lsolver::generateNewPackets(
 }
 
 // Rand lands in [prefixPi[i - 1], prefixPi[i]) with probability P[i]
-int Lsolver::pickRandomNeighbor(int n, double *prefixPi) {
+int Lsolver::pickRandomNeighbor(int n, const double *prefixPi) {
     auto rand = dist(rng);
     return std::upper_bound(prefixPi, prefixPi + n, rand) - prefixPi;
 }
@@ -109,17 +111,7 @@ void Lsolver::transmitPackets(
     }
 }
 
-bool Lsolver::hasConverged(int n, int *inQ) {
-    int numberOfNodesWithUnstableQueue = 0;
-    for (int i = 0; i < n - 1; ++i) {
-        if (inQ[i] != 0) {
-            ++numberOfNodesWithUnstableQueue;
-        }
-    }
-    return numberOfNodesWithUnstableQueue < e1*n;
-}
-
-void Lsolver::updateCnt(int n, int *Q, int *cnt) {
+void Lsolver::updateCnt(int n, const int *Q, int *cnt) {
 #pragma omp parallel for
     for (int i = 0; i < n - 1; ++i) {
         if (Q[i] > 0) {
@@ -128,58 +120,26 @@ void Lsolver::updateCnt(int n, int *Q, int *cnt) {
     }
 }
 
-template <typename T>
-void fill(int n, T *a, T x) {
-#pragma omp parallel for
-    for (int i = 0; i < n; ++i) {
-        a[i] = x;
-    }
-}
-
-void Lsolver::estimateQueueOccupancyProbability(
+void Lsolver::estimateEta(
         int n, double **prefixP, int *cnt, int *Q, int *inQ,
-        double beta, const double *J, double T_samp, double *eta) {
+        double beta, const double *J, double T, double *eta) {
 
     fill(n, Q, 0);
     fill(n, cnt, 0);
 
-    int T = 0;
-    int numIt = 0;
-    int maxIt = 4*T_samp;
-
-    bool converged = false;
-    bool completed = false; // completed when converged and sampled
-    while (!completed and numIt < maxIt) {
+    for (int t = 0; t < T; ++t) {
         fill(n, inQ, 0);
+
         generateNewPackets(n, Q, beta, J);
         transmitPackets(n, prefixP, Q, inQ);
         addArray(n, Q, inQ);
 
-        if (not converged) {
-            converged = hasConverged(n, inQ);
-        } else {
-            ++T;
-            updateCnt(n, Q, cnt);
-            completed = (T > T_samp);
-        }
-        ++numIt;
+        updateCnt(n, Q, cnt);
     }
 
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        eta[i] = cnt[i]/T_samp;
-    }
-
-    if (not converged) {
-        eta[0] = 1;
-    }
-}
-
-template <typename T>
-void initNewMemory2d(int n, int m, T*** A) {
-    *A = new T*[n];
-    for (int i = 0; i < n; ++i) {
-        (*A)[i] = new T[m];
+        eta[i] = cnt[i]/T;
     }
 }
 
@@ -199,33 +159,30 @@ void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
     }
 }
 
-double Lsolver::computeY(
-        int n, const Graph *g, double **P, const double *eta) {
-    g->copyTransitionMatrix(P);
-    double y = 0;
+template < typename T >
+void err(int n, const T* a) {
     for (int i = 0; i < n; ++i) {
-        y += P[n - 1][i] * eta[i];
+        std::cerr << a[i] << ' ';
     }
-    return y;
+    std::cerr << '\n';
 }
 
-void Lsolver::computeQueueOccupancyProbabilityAtStationarity(
-        const Graph *g, const double *b,
-        double **eta, double *beta, double *y) {
+double Lsolver::computeEtaAtStationarity(
+        const Graph *g, const double *b, double **eta) {
 
     rng.seed(std::random_device{}());
 
     int n = g->getNumVertex();
-    auto T_samp = 4*log(n) / (k*e2);
+    auto T_samp = 64*3*n + 4*log(n) / (k*e2);
 
     double *J = new double[n];
     computeJ(n, b, J);
 
     double **prefixP = NULL;
-    initNewMemory2d(n, n, &prefixP);
+    initNewMemory2d(n, &prefixP);
 
     // prefixP is each row of P replaced with prefixSum array of that row
-    // To pickNeighbor in O(logN)
+    // to pickNeighbor in O(logN)
     computePrefixP(n, g, prefixP);
 
     int *cnt  = new int[n];
@@ -240,24 +197,22 @@ void Lsolver::computeQueueOccupancyProbabilityAtStationarity(
     // choose beta such that it's less that beta* (which we don't know)
     // but not too small else packets won't be generated
     // So start with INF or at least
-    *beta = 100;
+    double beta = 100;
     do {
-        *beta /= 2;
+        beta /= 2;
 
-        estimateQueueOccupancyProbability(
-                n, prefixP, cnt, Q, inQ, *beta, J, T_samp, *eta);
+        estimateEta(n, prefixP, cnt, Q, inQ, beta, J, T_samp, *eta);
 
         max_eta = max(n, *eta);
-    } while (max_eta > 0.75 * (1 - e1 - e2) and *beta > 0);
+    } while (max_eta > 0.75*(1 - e1 - e2) and beta > 0);
 
+    del(n, prefixP);
     delete[] J; J = NULL;
     delete[] Q; Q = NULL;
     delete[] cnt; cnt = NULL;
     delete[] inQ; inQ = NULL;
 
-    *y = computeY(n, g, prefixP, *eta);
-
-    del(n, prefixP);
+    return beta;
 }
 
 void Lsolver::computeCanonicalSolution(
@@ -270,12 +225,15 @@ void Lsolver::computeCanonicalSolution(
     g->copyDegreeMatrix(d);
 
     *x = new double[n];
+
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i]);
     }
 
+    // centering for canonical solution
     auto avg_x = sum(n, *x)/n;
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*x)[i] -= avg_x;
     }

@@ -8,7 +8,7 @@ public:
     Lsolver(double _e1 = 0.05, double _e2 = 0.05, double _k = 0.1):
         k(_k), e1(_e1), e2(_e2) { }
 
-    void solve(const Graph *g, const double *b, double **x, double *c);
+    void solve(const Graph *g, const double *b, double **x);
 private:
     double k;
     double e1;
@@ -16,21 +16,18 @@ private:
 
     void computeJ(int n, const double *b, double *J);
     void computePrefixP(int n, const Graph *g, double **prefixP);
-    double computeY(int n, const Graph *g, double **P, const double *eta);
 
-    void computeQueueOccupancyProbabilityAtStationarity(
-            const Graph *g, const double *b,
-            double **eta, double *beta, double *y);
+    double computeEtaAtStationarity(
+            const Graph *g, const double *b, double **eta);
 
-    void updateCnt(int n, int *Q, int *cnt);
-    bool hasConverged(int n, int *inQ);
+    void updateCnt(int n, const int *Q, int *cnt);
 
     void generateNewPackets(int n, int *Q, double beta, const double *J);
 
-    int pickRandomNeighbor(int n, double *prefixPi);
+    int pickRandomNeighbor(int n, const double *prefixPi);
     void transmitPackets(int n, double **prefixP, int *oldQ, int *newQ);
 
-    void estimateQueueOccupancyProbability(
+    void estimateEta(
             int n, double **prefixP, int *cnt, int *Q, int *inQ,
             double beta, const double *J, double T_samp, double *eta);
 

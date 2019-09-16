@@ -31,7 +31,7 @@ Graph::Graph(int _n): n(_n) {
 }
 
 template <typename T>
-T sum(int n, T *a) {
+T sum(int n, const T *a) {
     T sum_a = 0;
     for (int i = 0; i < n; ++i) {
         sum_a += a[i];
