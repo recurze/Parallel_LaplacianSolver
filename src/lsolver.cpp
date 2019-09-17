@@ -1,6 +1,5 @@
 #include "lsolver.h"
 
-#include "omp.h"
 #include <cmath>
 #include <random>
 #include <cassert>
@@ -20,7 +19,6 @@ inline T sum(int n, const T *a) {
 
 template <typename T>
 void addArray(int n, T *a, const T *b) {
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         a[i] += b[i];
     }
@@ -28,7 +26,6 @@ void addArray(int n, T *a, const T *b) {
 
 template <typename T>
 void fill(int n, T *a, const T& x) {
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         a[i] = x;
     }
@@ -51,7 +48,6 @@ void del(int n, T **P) {
 }
 
 void Lsolver::solve(const Graph *g, const double *b, double **x) {
-    auto start_time = omp_get_wtime();
 
     double *eta = NULL;
     auto beta = computeEtaAtStationarity(g, b, &eta);
@@ -62,15 +58,12 @@ void Lsolver::solve(const Graph *g, const double *b, double **x) {
     computeCanonicalSolution(g, b, eta, beta, x);
     delete[] eta; eta = NULL;
 
-    auto end_time = omp_get_wtime();
 
     std::cerr << "Beta: " << beta
-              << "\nTime: " << end_time - start_time
               << "\n";
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         J[i] = -b[i]/b[n - 1];
     }
@@ -105,7 +98,6 @@ inline bool trueWithProbability(double p) {
 
 void Lsolver::generateNewPackets(
         int n, int *Q, double beta, const double *J) {
-#pragma omp parallel for
     for (int i = 0; i < n - 1; ++i) {
         if (trueWithProbability(beta * J[i])) {
             ++Q[i];
@@ -122,18 +114,15 @@ int Lsolver::pickRandomNeighbor(
 
 void Lsolver::transmitPackets(
         int n, double **alias, double **prob, int *Q, int *inQ) {
-#pragma omp parallel for
     for (int i = 0; i < n - 1; ++i) {
         if (Q[i] > 0) {
             --Q[i];
-#pragma omp atomic
             ++inQ[pickRandomNeighbor(n, alias[i], prob[i])];
         }
     }
 }
 
 void Lsolver::updateCnt(int n, const int *Q, int *cnt) {
-#pragma omp parallel for
     for (int i = 0; i < n - 1; ++i) {
         if (Q[i] > 0) {
             ++cnt[i];
@@ -158,7 +147,6 @@ void Lsolver::estimateEta(
         updateCnt(n, Q, cnt);
     }
 
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         eta[i] = cnt[i]/T;
     }
@@ -197,6 +185,9 @@ void AliasMethod(int n, double *P, double *alias, double *prob) {
 
     while (ltop > 0) prob[large[--ltop]] = 1;
     while (stop > 0) prob[small[--stop]] = 1;
+
+    delete[] small;
+    delete[] large;
 }
 
 
@@ -208,7 +199,6 @@ void Lsolver::computeAliasAndProb(
     initNewMemory2d(n, &P);
     g->copyTransitionMatrix(P);
 
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         AliasMethod(n, P[i], alias[i], prob[i]);
     }
@@ -277,14 +267,12 @@ void Lsolver::computeCanonicalSolution(
 
     *x = new double[n];
 
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i]);
     }
 
     // centering for canonical solution
     auto avg_x = sum(n, *x)/n;
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*x)[i] -= avg_x;
     }
