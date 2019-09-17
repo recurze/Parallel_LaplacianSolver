@@ -194,8 +194,6 @@ void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
 double Lsolver::computeEtaAtStationarity(
         const Graph *g, const double *b, double **eta) {
 
-    rng.seed(std::random_device{}());
-
     int n = g->getNumVertex();
     auto T_samp = 64*3*n + 4*log(n)/(k*e2);
 
