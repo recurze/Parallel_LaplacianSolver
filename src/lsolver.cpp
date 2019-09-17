@@ -95,9 +95,12 @@ unsigned long xorshf96() {
 }
 
 const unsigned long long int MAX = 18446744073709551615ULL;
+inline double random_double() {
+    return (double) xorshf96()/MAX;
+}
+
 inline bool trueWithProbability(double p) {
-    auto rand = (double) xorshf96()/MAX;
-    return rand <= p;
+    return random_double() <= p;
 }
 
 void Lsolver::generateNewPackets(
@@ -110,35 +113,21 @@ void Lsolver::generateNewPackets(
     }
 }
 
-template <typename T>
-int upper_bound(const T *a, int n, const T& x) {
-    int l = 0;
-    int h = n;
-    while (l < h) {
-        int m = l + (h - l)/2;
-        if (x >= a[m]) {
-            l = m + 1;
-        } else {
-            h = m;
-        }
-    }
-    return l;
-}
+int Lsolver::pickRandomNeighbor(
+        int n, const double *alias, const double *prob) {
 
-// Rand lands in [prefixPi[i - 1], prefixPi[i]) with probability P[i]
-int Lsolver::pickRandomNeighbor(int n, const double *prefixPi) {
-    auto rand = (double) xorshf96()/MAX;
-    return upper_bound(prefixPi, n, rand);
+    int col = (int) (random_double()*n);
+    return (random_double() < prob[col]) ? col : alias[col];
 }
 
 void Lsolver::transmitPackets(
-        int n, double **prefixP, int *Q, int *inQ) {
+        int n, double **alias, double **prob, int *Q, int *inQ) {
 #pragma omp parallel for
     for (int i = 0; i < n - 1; ++i) {
         if (Q[i] > 0) {
             --Q[i];
 #pragma omp atomic
-            ++inQ[pickRandomNeighbor(n, prefixP[i])];
+            ++inQ[pickRandomNeighbor(n, alias[i], prob[i])];
         }
     }
 }
@@ -153,8 +142,8 @@ void Lsolver::updateCnt(int n, const int *Q, int *cnt) {
 }
 
 void Lsolver::estimateEta(
-        int n, double **prefixP, int *cnt, int *Q, int *inQ,
-        double beta, const double *J, double T, double *eta) {
+        int n, double **alias, double **prob, int *cnt, int *Q,
+        int *inQ, double beta, const double *J, double T, double *eta) {
 
     fill(n, Q, 0);
     fill(n, cnt, 0);
@@ -163,7 +152,7 @@ void Lsolver::estimateEta(
         fill(n, inQ, 0);
 
         generateNewPackets(n, Q, beta, J);
-        transmitPackets(n, prefixP, Q, inQ);
+        transmitPackets(n, alias, prob, Q, inQ);
         addArray(n, Q, inQ);
 
         updateCnt(n, Q, cnt);
@@ -173,22 +162,58 @@ void Lsolver::estimateEta(
     for (int i = 0; i < n; ++i) {
         eta[i] = cnt[i]/T;
     }
+
 }
 
+void AliasMethod(int n, double *P, double *alias, double *prob) {
+    int *small = new int[n];
+    int *large = new int[n];
 
-template <typename T>
-void replaceArrayWithPrefixSum(int n, T* A) {
-    for (int i = 1; i < n; ++i) {
-        A[i] += A[i - 1];
+    int stop = 0, ltop = 0;
+    for (int i = 0; i < n; ++i) {
+        P[i] *= n;
+        if (P[i] < 1) {
+            small[stop++] = i;
+        } else {
+            large[ltop++] = i;
+        }
     }
+
+    while (stop > 0 and ltop > 0) {
+        auto less = small[--stop];
+        auto more = large[--ltop];
+
+        prob[less] = P[less];
+        alias[less] = more;
+
+        P[more] -= (1 - P[less]);
+
+        if (P[more] < 1) {
+            small[stop++] = more;
+        } else {
+            large[ltop++] = more;
+        }
+    }
+
+    while (ltop > 0) prob[large[--ltop]] = 1;
+    while (stop > 0) prob[small[--stop]] = 1;
 }
 
-void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
-    g->copyTransitionMatrix(prefixP);
+
+void Lsolver::computeAliasAndProb(
+        int n, const Graph *g,
+        double **alias, double **prob) {
+
+    double **P = NULL;
+    initNewMemory2d(n, &P);
+    g->copyTransitionMatrix(P);
+
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        replaceArrayWithPrefixSum(n, prefixP[i]);
+        AliasMethod(n, P[i], alias[i], prob[i]);
     }
+
+    del(n, P);
 }
 
 double Lsolver::computeEtaAtStationarity(
@@ -200,12 +225,15 @@ double Lsolver::computeEtaAtStationarity(
     double *J = new double[n];
     computeJ(n, b, J);
 
-    double **prefixP = NULL;
-    initNewMemory2d(n, &prefixP);
+    double **prob = NULL;
+    initNewMemory2d(n, &prob);
 
-    // prefixP is each row of P replaced with prefixSum array of that row
-    // to pickNeighbor in O(logN)
-    computePrefixP(n, g, prefixP);
+    double **alias = NULL;
+    initNewMemory2d(n, &alias);
+
+    // Alias method to sample from discrete distribution
+    // http://www.keithschwarz.com/darts-dice-coins/
+    computeAliasAndProb(n, g, alias, prob);
 
     int *cnt  = new int[n];
 
@@ -223,12 +251,13 @@ double Lsolver::computeEtaAtStationarity(
     do {
         beta /= 2;
 
-        estimateEta(n, prefixP, cnt, Q, inQ, beta, J, T_samp, *eta);
+        estimateEta(n, alias, prob, cnt, Q, inQ, beta, J, T_samp, *eta);
 
         max_eta = max(n, *eta);
     } while (max_eta > 0.75*(1 - e1 - e2) and beta > 0);
 
-    del(n, prefixP);
+    del(n, prob);
+    del(n, alias);
     delete[] J; J = NULL;
     delete[] Q; Q = NULL;
     delete[] cnt; cnt = NULL;

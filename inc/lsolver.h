@@ -15,7 +15,8 @@ private:
     double e2;
 
     void computeJ(int n, const double *b, double *J);
-    void computePrefixP(int n, const Graph *g, double **prefixP);
+    void computeAliasAndProb(
+            int n, const Graph *g, double **alias, double **prob);
 
     double computeEtaAtStationarity(
             const Graph *g, const double *b, double **eta);
@@ -24,12 +25,13 @@ private:
 
     void generateNewPackets(int n, int *Q, double beta, const double *J);
 
-    int pickRandomNeighbor(int n, const double *prefixPi);
-    void transmitPackets(int n, double **prefixP, int *oldQ, int *newQ);
+    int pickRandomNeighbor(int n, const double *alias, const double *prob);
+    void transmitPackets(
+            int n, double **alias, double **prob, int *oldQ, int *newQ);
 
     void estimateEta(
-            int n, double **prefixP, int *cnt, int *Q, int *inQ,
-            double beta, const double *J, double T_samp, double *eta);
+            int n, double **alias, double **prob, int *cnt, int *Q,
+            int *inQ, double beta, const double *J, double T_samp, double *eta);
 
     void computeCanonicalSolution(
             const Graph *g, const double *b,
