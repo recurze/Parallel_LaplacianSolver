@@ -94,6 +94,8 @@ bool isConnected(int n, double **A) {
             return false;
         }
     }
+
+    delete[] visited;
     return true;
 }
 
@@ -134,6 +136,11 @@ void in(const char *fname, Graph **g, double **b) {
     }
     checkValidGraph(n, A);
     *g = new Graph(n, A);
+
+    for (int i = 0; i < n; ++i) {
+        delete[] A[i];
+    }
+    delete[] A;
 
     *b = new double[n];
     for (int i = 0; i < n; ++i) {
