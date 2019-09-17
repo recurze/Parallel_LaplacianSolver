@@ -76,11 +76,28 @@ void Lsolver::computeJ(int n, const double *b, double *J) {
     }
 }
 
-std::mt19937 rng;
-std::uniform_real_distribution<double> dist(0, 1);
+static unsigned long x = 123456789;
+static unsigned long y = 362436069;
+static unsigned long z = 521288629;
 
+unsigned long xorshf96() {
+    unsigned long t;
+    x ^= x << 16;
+    x ^= x >> 5;
+    x ^= x << 1;
+
+    t = x;
+    x = y;
+    y = z;
+    z = t ^ x ^ y;
+
+    return z;
+}
+
+const unsigned long long int MAX = 18446744073709551615ULL;
 inline bool trueWithProbability(double p) {
-    return dist(rng) <= p;
+    auto rand = (double) xorshf96()/MAX;
+    return rand <= p;
 }
 
 void Lsolver::generateNewPackets(
@@ -93,10 +110,25 @@ void Lsolver::generateNewPackets(
     }
 }
 
+template <typename T>
+int upper_bound(const T *a, int n, const T& x) {
+    int l = 0;
+    int h = n;
+    while (l < h) {
+        int m = l + (h - l)/2;
+        if (x >= a[m]) {
+            l = m + 1;
+        } else {
+            h = m;
+        }
+    }
+    return l;
+}
+
 // Rand lands in [prefixPi[i - 1], prefixPi[i]) with probability P[i]
 int Lsolver::pickRandomNeighbor(int n, const double *prefixPi) {
-    auto rand = dist(rng);
-    return std::upper_bound(prefixPi, prefixPi + n, rand) - prefixPi;
+    auto rand = (double) xorshf96()/MAX;
+    return upper_bound(prefixPi, n, rand);
 }
 
 void Lsolver::transmitPackets(
@@ -159,21 +191,13 @@ void Lsolver::computePrefixP(int n, const Graph *g, double **prefixP) {
     }
 }
 
-template < typename T >
-void err(int n, const T* a) {
-    for (int i = 0; i < n; ++i) {
-        std::cerr << a[i] << ' ';
-    }
-    std::cerr << '\n';
-}
-
 double Lsolver::computeEtaAtStationarity(
         const Graph *g, const double *b, double **eta) {
 
     rng.seed(std::random_device{}());
 
     int n = g->getNumVertex();
-    auto T_samp = 64*3*n + 4*log(n) / (k*e2);
+    auto T_samp = 64*3*n + 4*log(n)/(k*e2);
 
     double *J = new double[n];
     computeJ(n, b, J);
@@ -197,7 +221,7 @@ double Lsolver::computeEtaAtStationarity(
     // choose beta such that it's less that beta* (which we don't know)
     // but not too small else packets won't be generated
     // So start with INF or at least
-    double beta = 100;
+    double beta = 10;
     do {
         beta /= 2;
 
