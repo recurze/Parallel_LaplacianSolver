@@ -59,8 +59,7 @@ void Lsolver::solve(const Graph *g, const double *b, double **x) {
     delete[] eta; eta = NULL;
 
 
-    std::cerr << "Beta: " << beta
-              << "\n";
+    std::cerr << "Beta: " << beta << "\n";
 }
 
 void Lsolver::computeJ(int n, const double *b, double *J) {
@@ -130,27 +129,47 @@ void Lsolver::updateCnt(int n, const int *Q, int *cnt) {
     }
 }
 
+#define MAX_EPOCHS 1000
+#define LENGTH_OF_EPOCH 1000
 void Lsolver::estimateEta(
-        int n, double **alias, double **prob, int *cnt, int *Q,
-        int *inQ, double beta, const double *J, double T, double *eta) {
-
-    fill(n, Q, 0);
-    fill(n, cnt, 0);
-
-    for (int t = 0; t < T; ++t) {
-        fill(n, inQ, 0);
-
-        generateNewPackets(n, Q, beta, J);
-        transmitPackets(n, alias, prob, Q, inQ);
-        addArray(n, Q, inQ);
-
-        updateCnt(n, Q, cnt);
-    }
+        int n, double **alias, double **prob, int *cnt,
+        int *Q, int *inQ, double beta, const double *J, double *eta) {
 
     for (int i = 0; i < n; ++i) {
-        eta[i] = cnt[i]/T;
+        Q[i] = 0;
+        cnt[i] = 0;
+        inQ[i] = 0;
     }
 
+
+    int epoch = 0;
+    double oldC = 0, newC = 0;
+    do {
+        ++epoch;
+        oldC = newC;
+        for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
+            for (int i = 0; i < n - 1; ++i) {
+                Q[i] += trueWithProbability(beta * J[i]);
+                if (Q[i]) {
+                    --Q[i];
+                    ++cnt[i];
+                    ++inQ[pickRandomNeighbor(n, alias[i], prob[i])];
+                }
+            }
+
+            for (int i = 0; i < n; ++i) {
+                Q[i] += inQ[i];
+                inQ[i] = 0;
+            }
+        }
+        newC = (double) Q[n - 1]/(1 + sum(n, Q));
+    } while (fabs(oldC - newC) > 1e-4 and epoch < MAX_EPOCHS);
+
+    double T = epoch * LENGTH_OF_EPOCH;
+    for (int i = 0; i < n - 1; ++i) {
+        eta[i] = cnt[i]/T;
+    }
+    eta[n - 1] = 0;
 }
 
 void AliasMethod(int n, double *P, double *alias, double *prob) {
@@ -210,7 +229,6 @@ double Lsolver::computeEtaAtStationarity(
         const Graph *g, const double *b, double **eta) {
 
     int n = g->getNumVertex();
-    auto T_samp = 64*3*n + 4*log(n)/(k*e2);
 
     double *J = new double[n];
     computeJ(n, b, J);
@@ -237,11 +255,11 @@ double Lsolver::computeEtaAtStationarity(
     // choose beta such that it's less that beta* (which we don't know)
     // but not too small else packets won't be generated
     // So start with INF or at least
-    double beta = 10;
+    double beta = 1.28;
     do {
         beta /= 2;
 
-        estimateEta(n, alias, prob, cnt, Q, inQ, beta, J, T_samp, *eta);
+        estimateEta(n, alias, prob, cnt, Q, inQ, beta, J, *eta);
 
         max_eta = max(n, *eta);
     } while (max_eta > 0.75*(1 - e1 - e2) and beta > 0);

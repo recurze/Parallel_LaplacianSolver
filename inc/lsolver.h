@@ -31,7 +31,7 @@ private:
 
     void estimateEta(
             int n, double **alias, double **prob, int *cnt, int *Q,
-            int *inQ, double beta, const double *J, double T_samp, double *eta);
+            int *inQ, double beta, const double *J, double *eta);
 
     void computeCanonicalSolution(
             const Graph *g, const double *b,
