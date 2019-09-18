@@ -21,13 +21,7 @@ private:
     double computeEtaAtStationarity(
             const Graph *g, const double *b, double **eta);
 
-    void updateCnt(int n, const int *Q, int *cnt);
-
-    void generateNewPackets(int n, int *Q, double beta, const double *J);
-
     int pickRandomNeighbor(int n, const double *alias, const double *prob);
-    void transmitPackets(
-            int n, double **alias, double **prob, int *oldQ, int *newQ);
 
     void estimateEta(
             int n, double **alias, double **prob, int *cnt, int *Q,

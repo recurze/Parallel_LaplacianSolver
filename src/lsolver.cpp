@@ -18,20 +18,6 @@ inline T sum(int n, const T *a) {
 }
 
 template <typename T>
-void addArray(int n, T *a, const T *b) {
-    for (int i = 0; i < n; ++i) {
-        a[i] += b[i];
-    }
-}
-
-template <typename T>
-void fill(int n, T *a, const T& x) {
-    for (int i = 0; i < n; ++i) {
-        a[i] = x;
-    }
-}
-
-template <typename T>
 void initNewMemory2d(int n, T*** A) {
     *A = new T*[n];
     for (int i = 0; i < n; ++i) {
@@ -95,38 +81,11 @@ inline bool trueWithProbability(double p) {
     return random_double() <= p;
 }
 
-void Lsolver::generateNewPackets(
-        int n, int *Q, double beta, const double *J) {
-    for (int i = 0; i < n - 1; ++i) {
-        if (trueWithProbability(beta * J[i])) {
-            ++Q[i];
-        }
-    }
-}
-
 int Lsolver::pickRandomNeighbor(
         int n, const double *alias, const double *prob) {
 
     int col = (int) (random_double()*n);
     return (random_double() < prob[col]) ? col : alias[col];
-}
-
-void Lsolver::transmitPackets(
-        int n, double **alias, double **prob, int *Q, int *inQ) {
-    for (int i = 0; i < n - 1; ++i) {
-        if (Q[i] > 0) {
-            --Q[i];
-            ++inQ[pickRandomNeighbor(n, alias[i], prob[i])];
-        }
-    }
-}
-
-void Lsolver::updateCnt(int n, const int *Q, int *cnt) {
-    for (int i = 0; i < n - 1; ++i) {
-        if (Q[i] > 0) {
-            ++cnt[i];
-        }
-    }
 }
 
 #define MAX_EPOCHS 1000
@@ -252,9 +211,7 @@ double Lsolver::computeEtaAtStationarity(
     *eta = new double[n];
     double max_eta = 0;
 
-    // choose beta such that it's less that beta* (which we don't know)
-    // but not too small else packets won't be generated
-    // So start with INF or at least
+    // Can start with any big value, but beta < beta* is below 1
     double beta = 1.28;
     do {
         beta /= 2;
