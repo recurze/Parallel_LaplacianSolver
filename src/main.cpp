@@ -2,13 +2,15 @@
 #include "lsolver.h"
 
 #include <cmath>
+#include <vector>
 #include <cassert>
 #include <fstream>
+#include <numeric>
 #include <iostream>
 #include <functional>
 
-void in(const char *fname, Graph **g, double **b);
-void out(const char *fname, int n, double *x);
+void in(const char *fname, Graph **g, std::vector<double>& b);
+void out(const char *fname, const std::vector<double>& x);
 
 int main(int argc, char **argv) {
     if (argc != 3) {
@@ -17,34 +19,25 @@ int main(int argc, char **argv) {
     }
 
     Graph *g = NULL;
-    double *b = NULL;
+    std::vector<double> b;
     char *ifname = argv[1];
-    in(ifname, &g, &b);
 
-    assert(g != NULL);
-    assert(b != NULL);
+    in(ifname, &g, b);
 
-    double *x = NULL;
-    Lsolver(0.1, 0.1, 0.1).solve(g, b, &x);
+    std::vector<double> x;
+    Lsolver(g, b).solve(x);
 
-    assert(x != NULL);
-
-    delete[] b; b = NULL;
-
-    int n = g->getNumVertex();
     delete g; g = NULL;
 
     char *ofname = argv[2];
-    out(ofname, n, x);
-
-    delete[] x; x = NULL;
+    out(ofname, x);
 
     return 0;
 }
 
 const double EPS = 1e-6;
-
-bool isSymmetric(int n, double **A) {
+bool isSymmetric(const std::vector< std::vector<double> >& A) {
+    int n = (int) A.size();
     for (int i = 0; i < n; ++i) {
         for (int j = i + 1; j < n; ++j) {
             if (fabs(A[i][j] - A[j][i]) > EPS) {
@@ -55,7 +48,8 @@ bool isSymmetric(int n, double **A) {
     return true;
 }
 
-bool isPositiveWeighted(int n, double **A) {
+bool isPositiveWeighted(const std::vector< std::vector<double> >& A) {
+    int n = (int) A.size();
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             if (A[i][j] < -EPS) {
@@ -66,7 +60,8 @@ bool isPositiveWeighted(int n, double **A) {
     return true;
 }
 
-bool noSelfLoops(int n, double **A) {
+bool noSelfLoops(const std::vector< std::vector<double> >& A) {
+    int n = (int) A.size();
     for (int i = 0; i < n; ++i) {
         if (A[i][i] > EPS) {
             return false;
@@ -75,9 +70,9 @@ bool noSelfLoops(int n, double **A) {
     return true;
 }
 
-bool isConnected(int n, double **A) {
-    bool *visited = new bool[n];
-    std::fill(visited, visited + n, false);
+bool isConnected(const std::vector< std::vector<double> >& A) {
+    int n = (int) A.size();
+    std::vector<bool> visited(n, false);
 
     std::function<void(int)> dfs = [&](int u) {
         visited[u] = true;
@@ -95,63 +90,54 @@ bool isConnected(int n, double **A) {
         }
     }
 
-    delete[] visited;
     return true;
 }
 
-inline void checkValidGraph(int n, double **A) {
-    assert(isSymmetric(n, A));
-    assert(isPositiveWeighted(n, A));
-    assert(isConnected(n, A));
-    assert(noSelfLoops(n, A));
+inline void checkValidGraph(const std::vector< std::vector<double> >& A) {
+    assert(isSymmetric(A));
+    assert(isPositiveWeighted(A));
+    assert(isConnected(A));
+    assert(noSelfLoops(A));
 }
 
 template <typename T>
-T sum(int n, const T *a) {
-    T sum_a = 0;
-    for (int i = 0; i < n; ++i) {
-        sum_a += a[i];
-    }
-    return sum_a;
+inline T sum(const std::vector<T>& a) {
+    return std::accumulate(a.begin(), a.end(), (T) 0);
 }
 
-void checkValidb(int n, const double *b) {
-    assert(fabs(b[n - 1]) > EPS);
-    assert(fabs(sum(n, b)) < EPS);
+void checkValidb(int n, const std::vector<double>& b) {
+    assert(fabs(b.back()) > EPS);
+    assert(fabs(sum(b)) < EPS);
 }
 
-void in(const char *fname, Graph **g, double **b) {
+void in(const char *fname, Graph **g, std::vector<double>& b) {
     std::ifstream infile(fname);
 
     int n;
     infile >> n;
     assert(n > 0);
 
-    double **A = new double*[n];
+    std::vector< std::vector<double> > A(n);
     for (int i = 0; i < n; ++i) {
-        A[i] = new double[n];
+        A[i].resize(n);
         for (int j = 0; j < n; ++j) {
             infile >> A[i][j];
         }
     }
-    checkValidGraph(n, A);
-    *g = new Graph(n, A);
+    checkValidGraph(A);
+    *g = new Graph(A);
 
+    b.resize(n);
     for (int i = 0; i < n; ++i) {
-        delete[] A[i];
+        infile >> b[i];
     }
-    delete[] A;
-
-    *b = new double[n];
-    for (int i = 0; i < n; ++i) {
-        infile >> (*b)[i];
-    }
-    checkValidb(n, *b);
+    checkValidb(n, b);
 }
 
-void out(const char *fname, int n, double *x) {
+void out(const char *fname, const std::vector<double>& x) {
     std::ofstream outfile(fname);
-    for (int i = 0; i < n; ++i) {
-        outfile << x[i] << (i == n - 1 ? '\n' : ' ');
+    for (const auto& i: x) {
+        outfile << i << ' ';
     }
+    outfile << '\n';
 }

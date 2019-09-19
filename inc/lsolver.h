@@ -2,34 +2,42 @@
 #define LSOLVER_H
 
 #include "graph.h"
+#include "sampler.h"
+
+#include <vector>
 
 class Lsolver {
 public:
-    Lsolver(double _e1 = 0.05, double _e2 = 0.05, double _k = 0.1):
-        k(_k), e1(_e1), e2(_e2) { }
+    Lsolver(const Graph *g);
+    Lsolver(const Graph *g, const std::vector<double>& b);
 
-    void solve(const Graph *g, const double *b, double **x);
+    void solve(std::vector<double>& x);
+    void solve(const std::vector<double>& b, std::vector<double>& x);
 private:
-    double k;
-    double e1;
-    double e2;
+    int n;
 
-    void computeJ(int n, const double *b, double *J);
-    void computeAliasAndProb(
-            int n, const Graph *g, double **alias, double **prob);
+    std::vector<double> d;
+    std::vector<double> J;
+    std::vector<double> eta;
 
-    double computeEtaAtStationarity(
-            const Graph *g, const double *b, double **eta);
+    double beta;
+    double b_sink;
 
-    int pickRandomNeighbor(int n, const double *alias, const double *prob);
+    std::vector<Sampler> sampler;
 
-    void estimateEta(
-            int n, double **alias, double **prob, int *cnt, int *Q,
-            int *inQ, double beta, const double *J, double *eta);
+    const double k = 0.1;
+    const double e1 = 0.1;
+    const double e2 = 0.1;
 
-    void computeCanonicalSolution(
-            const Graph *g, const double *b,
-            double *eta, double beta, double **x);
+    void initGraph(const Graph *g);
+
+    void computeJ(const std::vector<double>& b);
+
+    void computeStationarityState();
+
+    void estimateEta();
+
+    void computeCanonicalSolution(std::vector<double>& x);
 };
 
 #endif

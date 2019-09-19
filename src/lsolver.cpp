@@ -1,105 +1,87 @@
+#include "rng.h"
 #include "lsolver.h"
 
 #include <cmath>
-#include <random>
 #include <cassert>
 #include <numeric>
 #include <iostream>
 #include <algorithm>
 
 template <typename T>
-inline T max(int n, const T *a) {
-    return *std::max_element(a, a + n);
+inline void err(const std::vector<T>& a) {
+    for (const auto& i: a) std::cerr << i << ' ';
+    std::cerr << '\n';
 }
 
 template <typename T>
-inline T sum(int n, const T *a) {
-    return std::accumulate(a, a + n, (T) 0);
+inline T max(const std::vector<T>& a) {
+    return *std::max_element(a.begin(), a.end());
 }
 
 template <typename T>
-void initNewMemory2d(int n, T*** A) {
-    *A = new T*[n];
+inline T sum(const std::vector<T>& a) {
+    return std::accumulate(a.begin(), a.end(), (T) 0);
+}
+
+void Lsolver::initGraph(const Graph *g) {
+    n = g->getNumVertex();
+    d = g->getDegreeMatrix();
+
+    auto P = g->getTransitionMatrix();
+
+    sampler.reserve(n);
     for (int i = 0; i < n; ++i) {
-        (*A)[i] = new T[n];
+        sampler.push_back(Sampler(P[i]));
     }
 }
 
-template <typename T>
-void del(int n, T **P) {
-    for (int i = 0; i < n; ++i) {
-        delete[] P[i];
-    }
-    delete[] P;
+Lsolver::Lsolver(const Graph *g) {
+    initGraph(g);
 }
 
-void Lsolver::solve(const Graph *g, const double *b, double **x) {
+Lsolver::Lsolver(const Graph *g, const std::vector<double>& b) {
+    initGraph(g);
 
-    double *eta = NULL;
-    auto beta = computeEtaAtStationarity(g, b, &eta);
+    J.resize(n);
+    computeJ(b);
+}
 
-    assert(eta != NULL);
+void Lsolver::solve(std::vector<double>& x) {
+    assert(not J.empty());
+    computeStationarityState();
+
     assert(beta > 0);
+    assert(not eta.empty());
 
-    computeCanonicalSolution(g, b, eta, beta, x);
-    delete[] eta; eta = NULL;
-
-
-    std::cerr << "Beta: " << beta << "\n";
+    computeCanonicalSolution(x);
 }
 
-void Lsolver::computeJ(int n, const double *b, double *J) {
+void Lsolver::solve(const std::vector<double>& b, std::vector<double>& x) {
+    J.resize(n);
+    computeJ(b);
+
+    solve(x);
+}
+
+void Lsolver::computeJ(const std::vector<double>& b) {
+    assert(not J.empty());
+    b_sink = b[n - 1];
     for (int i = 0; i < n; ++i) {
-        J[i] = -b[i]/b[n - 1];
+        J[i] = -b[i]/b_sink;
     }
 }
 
-static unsigned long x = 123456789;
-static unsigned long y = 362436069;
-static unsigned long z = 521288629;
-
-unsigned long xorshf96() {
-    unsigned long t;
-    x ^= x << 16;
-    x ^= x >> 5;
-    x ^= x << 1;
-
-    t = x;
-    x = y;
-    y = z;
-    z = t ^ x ^ y;
-
-    return z;
-}
-
-const unsigned long long int MAX = 18446744073709551615ULL;
-inline double random_double() {
-    return (double) xorshf96()/MAX;
-}
-
+Rng rng;
 inline bool trueWithProbability(double p) {
-    return random_double() <= p;
-}
-
-int Lsolver::pickRandomNeighbor(
-        int n, const double *alias, const double *prob) {
-
-    int col = (int) (random_double()*n);
-    return (random_double() < prob[col]) ? col : alias[col];
+    return rng.random_double() <= p;
 }
 
 #define MAX_EPOCHS 1000
 #define LENGTH_OF_EPOCH 1000
-void Lsolver::estimateEta(
-        int n, double **alias, double **prob, int *cnt,
-        int *Q, int *inQ, double beta, const double *J, double *eta) {
-
-    for (int i = 0; i < n; ++i) {
-        Q[i] = 0;
-        cnt[i] = 0;
-        inQ[i] = 0;
-    }
-
+void Lsolver::estimateEta() {
+    std::vector<int> Q(n, 0);
+    std::vector<int> cnt(n, 0);
+    std::vector<int> inQ(n, 0);
 
     int epoch = 0;
     double oldC = 0, newC = 0;
@@ -112,7 +94,7 @@ void Lsolver::estimateEta(
                 if (Q[i]) {
                     --Q[i];
                     ++cnt[i];
-                    ++inQ[pickRandomNeighbor(n, alias[i], prob[i])];
+                    ++inQ[sampler[i].generate()];
                 }
             }
 
@@ -121,136 +103,37 @@ void Lsolver::estimateEta(
                 inQ[i] = 0;
             }
         }
-        newC = (double) Q[n - 1]/(1 + sum(n, Q));
+        newC = (double) Q[n - 1]/(1 + sum(Q));
     } while (fabs(oldC - newC) > 1e-4 and epoch < MAX_EPOCHS);
 
-    double T = epoch * LENGTH_OF_EPOCH;
-    for (int i = 0; i < n - 1; ++i) {
-        eta[i] = cnt[i]/T;
+    for (int i = 0, T = epoch * LENGTH_OF_EPOCH; i < n; ++i) {
+        eta[i] = (double) cnt[i]/T;
     }
-    eta[n - 1] = 0;
+
+    std::cerr << "Beta: " << beta
+              << "\nEpochs: " << epoch
+              << "\nC: " << oldC << '\n';
 }
 
-void AliasMethod(int n, double *P, double *alias, double *prob) {
-    int *small = new int[n];
-    int *large = new int[n];
-
-    int stop = 0, ltop = 0;
-    for (int i = 0; i < n; ++i) {
-        P[i] *= n;
-        if (P[i] < 1) {
-            small[stop++] = i;
-        } else {
-            large[ltop++] = i;
-        }
-    }
-
-    while (stop > 0 and ltop > 0) {
-        auto less = small[--stop];
-        auto more = large[--ltop];
-
-        prob[less] = P[less];
-        alias[less] = more;
-
-        P[more] -= (1 - P[less]);
-
-        if (P[more] < 1) {
-            small[stop++] = more;
-        } else {
-            large[ltop++] = more;
-        }
-    }
-
-    while (ltop > 0) prob[large[--ltop]] = 1;
-    while (stop > 0) prob[small[--stop]] = 1;
-
-    delete[] small;
-    delete[] large;
-}
-
-
-void Lsolver::computeAliasAndProb(
-        int n, const Graph *g,
-        double **alias, double **prob) {
-
-    double **P = NULL;
-    initNewMemory2d(n, &P);
-    g->copyTransitionMatrix(P);
-
-    for (int i = 0; i < n; ++i) {
-        AliasMethod(n, P[i], alias[i], prob[i]);
-    }
-
-    del(n, P);
-}
-
-double Lsolver::computeEtaAtStationarity(
-        const Graph *g, const double *b, double **eta) {
-
-    int n = g->getNumVertex();
-
-    double *J = new double[n];
-    computeJ(n, b, J);
-
-    double **prob = NULL;
-    initNewMemory2d(n, &prob);
-
-    double **alias = NULL;
-    initNewMemory2d(n, &alias);
-
-    // Alias method to sample from discrete distribution
-    // http://www.keithschwarz.com/darts-dice-coins/
-    computeAliasAndProb(n, g, alias, prob);
-
-    int *cnt  = new int[n];
-
-    // since transmission is concurrent, we need separate inbox
-    int *Q = new int[n];
-    int *inQ = new int[n];
-
-    *eta = new double[n];
-    double max_eta = 0;
-
+void Lsolver::computeStationarityState() {
     // Can start with any big value, but beta < beta* is below 1
-    double beta = 1.28;
+    beta = 1.28;
+    eta.resize(n);
     do {
         beta /= 2;
-
-        estimateEta(n, alias, prob, cnt, Q, inQ, beta, J, *eta);
-
-        max_eta = max(n, *eta);
-    } while (max_eta > 0.75*(1 - e1 - e2) and beta > 0);
-
-    del(n, prob);
-    del(n, alias);
-    delete[] J; J = NULL;
-    delete[] Q; Q = NULL;
-    delete[] cnt; cnt = NULL;
-    delete[] inQ; inQ = NULL;
-
-    return beta;
+        estimateEta();
+    } while (max(eta) > 0.75 and beta > 0);
 }
 
-void Lsolver::computeCanonicalSolution(
-        const Graph *g, const double *b,
-        double *eta, double beta, double **x) {
-
-    int n = g->getNumVertex();
-
-    double* d = new double[n];
-    g->copyDegreeMatrix(d);
-
-    *x = new double[n];
-
+void Lsolver::computeCanonicalSolution(std::vector<double>& x) {
+    x.resize(n);
     for (int i = 0; i < n; ++i) {
-        (*x)[i] = (-b[n - 1]/beta) * (eta[i]/d[i]);
+        x[i] = (-b_sink/beta) * (eta[i]/d[i]);
     }
 
     // centering for canonical solution
-    auto avg_x = sum(n, *x)/n;
+    auto avg_x = sum(x)/n;
     for (int i = 0; i < n; ++i) {
-        (*x)[i] -= avg_x;
+        x[i] -= avg_x;
     }
-
-    delete[] d;
 }

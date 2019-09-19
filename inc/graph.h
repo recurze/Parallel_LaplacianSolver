@@ -1,28 +1,19 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
+#include <vector>
+
 class Graph {
 public:
-    Graph(int _n);
-    Graph(int _n, double **_A);
-    ~Graph();
+    Graph(const std::vector< std::vector<double> >& _A);
 
     int getNumVertex() const { return n; }
-    void copyDegreeMatrix(double *_D) const;
-    void copyLaplacianMatrix(double **_L) const;
-    void copyAdjacencyMatrix(double **_A) const;
-    void copyTransitionMatrix(double **_P) const;
+    std::vector<double> getDegreeMatrix() const { return D; }
+    std::vector< std::vector<double> > getTransitionMatrix() const { return P; }
 private:
     int n;
-    double *D;
-    double **A;
-    double **P;
-    double **L;
-
-    void init();
-    void computeL();
-    void computeP();
-    void computeD();
+    std::vector<double> D;
+    std::vector< std::vector<double> > P;
 };
 
 #endif
