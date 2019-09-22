@@ -9,7 +9,9 @@ public:
 
     int getNumVertex() const { return n; }
     std::vector<double> getDegreeMatrix() const { return D; }
-    std::vector< std::vector<double> > getTransitionMatrix() const { return P; }
+    std::vector< std::vector<double> > getTransitionMatrix() const {
+        return P;
+    }
 private:
     int n;
     std::vector<double> D;

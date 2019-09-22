@@ -1,15 +1,18 @@
 #include "sampler.h"
 
-Sampler::Sampler(std::vector<double>& p) {
+Sampler::Sampler(const std::vector<double>& p) {
     n = (int) p.size();
     prob.resize(n);
     alias.resize(n);
     init(p);
 }
 
-void Sampler::init(std::vector<double>& P) {
+void Sampler::init(const std::vector<double>& p) {
+
     std::vector<int> small; small.reserve(n);
     std::vector<int> large; large.reserve(n);
+
+    auto P = p;
 
     for (int i = 0; i < n; ++i) {
         P[i] *= n;
@@ -38,6 +41,7 @@ void Sampler::init(std::vector<double>& P) {
 
     for (auto &i: large) prob[i] = 1;
     for (auto &i: small) prob[i] = 1;
+
 }
 
 int Sampler::generate() {

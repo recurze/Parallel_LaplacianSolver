@@ -23,6 +23,8 @@ private:
     double beta;
     double b_sink;
 
+    std::vector< std::vector<double> > P;
+
     std::vector<Sampler> sampler;
 
     const double k = 0.1;

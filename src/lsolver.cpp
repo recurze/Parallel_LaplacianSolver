@@ -2,6 +2,7 @@
 #include "lsolver.h"
 
 #include <cmath>
+#include <chrono>
 #include <cassert>
 #include <numeric>
 #include <iostream>
@@ -27,7 +28,7 @@ void Lsolver::initGraph(const Graph *g) {
     n = g->getNumVertex();
     d = g->getDegreeMatrix();
 
-    auto P = g->getTransitionMatrix();
+    P = g->getTransitionMatrix();
 
     sampler.reserve(n);
     for (int i = 0; i < n; ++i) {
@@ -47,6 +48,7 @@ Lsolver::Lsolver(const Graph *g, const std::vector<double>& b) {
 }
 
 void Lsolver::solve(std::vector<double>& x) {
+    auto start = std::chrono::steady_clock::now();
     assert(not J.empty());
     computeStationarityState();
 
@@ -54,6 +56,11 @@ void Lsolver::solve(std::vector<double>& x) {
     assert(not eta.empty());
 
     computeCanonicalSolution(x);
+
+    auto finish = std::chrono::steady_clock::now();
+    double elapsed_seconds = std::chrono::duration_cast<
+        std::chrono::duration<double> >(finish - start).count();
+    std::cerr << "Solve Time: " << elapsed_seconds << '\n';
 }
 
 void Lsolver::solve(const std::vector<double>& b, std::vector<double>& x) {
@@ -77,7 +84,7 @@ inline bool trueWithProbability(double p) {
 }
 
 #define MAX_EPOCHS 1000
-#define LENGTH_OF_EPOCH 1000
+#define LENGTH_OF_EPOCH 2000
 void Lsolver::estimateEta() {
     std::vector<int> Q(n, 0);
     std::vector<int> cnt(n, 0);
@@ -97,22 +104,16 @@ void Lsolver::estimateEta() {
                     ++inQ[sampler[i].generate()];
                 }
             }
-
             for (int i = 0; i < n; ++i) {
-                Q[i] += inQ[i];
-                inQ[i] = 0;
+                Q[i] += inQ[i], inQ[i] = 0;
             }
         }
         newC = (double) Q[n - 1]/(1 + sum(Q));
-    } while (fabs(oldC - newC) > 1e-4 and epoch < MAX_EPOCHS);
+    } while (fabs(oldC - newC) > 1e-3 and epoch < MAX_EPOCHS);
 
     for (int i = 0, T = epoch * LENGTH_OF_EPOCH; i < n; ++i) {
         eta[i] = (double) cnt[i]/T;
     }
-
-    std::cerr << "Beta: " << beta
-              << "\nEpochs: " << epoch
-              << "\nC: " << oldC << '\n';
 }
 
 void Lsolver::computeStationarityState() {

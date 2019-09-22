@@ -5,9 +5,10 @@
 
 #include <vector>
 
+// Source: http://www.keithschwarz.com/darts-dice-coins/
 class Sampler {
 public:
-    Sampler(std::vector<double>& p);
+    Sampler(const std::vector<double>& p);
 
     int generate();
 private:
@@ -16,7 +17,7 @@ private:
     std::vector<double> alias;
 
     Rng rng;
-    void init(std::vector<double>& p);
+    void init(const std::vector<double>& p);
 };
 
 #endif
