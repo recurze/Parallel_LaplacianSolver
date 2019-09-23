@@ -23,6 +23,9 @@ private:
     double beta;
     double b_sink;
 
+    std::vector<int> Q;
+    std::vector<int> cnt;
+
     std::vector< std::vector<double> > P;
 
     std::vector<Sampler> sampler;
@@ -37,6 +40,9 @@ private:
 
     void computeStationarityState();
 
+    void step();
+    void serial();
+    void parallel();
     void estimateEta();
 
     void computeCanonicalSolution(std::vector<double>& x);

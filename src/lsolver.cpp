@@ -1,6 +1,8 @@
 #include "rng.h"
 #include "lsolver.h"
 
+#include <omp.h>
+
 #include <cmath>
 #include <chrono>
 #include <cassert>
@@ -73,6 +75,7 @@ void Lsolver::solve(const std::vector<double>& b, std::vector<double>& x) {
 void Lsolver::computeJ(const std::vector<double>& b) {
     assert(not J.empty());
     b_sink = b[n - 1];
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         J[i] = -b[i]/b_sink;
     }
@@ -83,43 +86,91 @@ inline bool trueWithProbability(double p) {
     return rng.random_double() <= p;
 }
 
+void Lsolver::step() {
+    parallel();
+    //serial();
+}
+
+void Lsolver::serial() {
+    std::vector<int> inQ(n, 0);
+    for (int i = 0; i < n - 1; ++i) {
+        Q[i] += trueWithProbability(beta * J[i]);
+        for (int k = 3; Q[i] and k; --k) {
+            --Q[i];
+            ++cnt[i];
+            ++inQ[sampler[i].generate()];
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        Q[i] += inQ[i];
+    }
+}
+
+#ifndef N_THREADS
+#define N_THREADS 16
+#endif
+
+void Lsolver::parallel() {
+    std::vector<int> inQ[N_THREADS];
+
+#pragma omp parallel for
+    for (int i = 0; i < N_THREADS; ++i) {
+        inQ[i].resize(n, 0);
+    }
+
+#pragma omp parallel for
+    for (int i = 0; i < n - 1; ++i) {
+        Q[i] += trueWithProbability(beta * J[i]);
+        for (int k = 3; Q[i] and k; --k) {
+            --Q[i];
+            ++cnt[i];
+            ++inQ[omp_get_thread_num()][sampler[i].generate()];
+        }
+    }
+
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        int x = 0;
+        for (int p = 0; p < N_THREADS; ++p) {
+            x += inQ[p][i];
+        }
+        Q[i] += x;
+    }
+}
+
 #define MAX_EPOCHS 1000
 #define LENGTH_OF_EPOCH 2000
 void Lsolver::estimateEta() {
-    std::vector<int> Q(n, 0);
-    std::vector<int> cnt(n, 0);
-    std::vector<int> inQ(n, 0);
-
     int epoch = 0;
     double oldC = 0, newC = 0;
     do {
         ++epoch;
         oldC = newC;
         for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
-            for (int i = 0; i < n - 1; ++i) {
-                Q[i] += trueWithProbability(beta * J[i]);
-                if (Q[i]) {
-                    --Q[i];
-                    ++cnt[i];
-                    ++inQ[sampler[i].generate()];
-                }
-            }
-            for (int i = 0; i < n; ++i) {
-                Q[i] += inQ[i], inQ[i] = 0;
-            }
+            step();
         }
         newC = (double) Q[n - 1]/(1 + sum(Q));
+        //std::cerr << newC << '\n';
     } while (fabs(oldC - newC) > 1e-3 and epoch < MAX_EPOCHS);
 
     for (int i = 0, T = epoch * LENGTH_OF_EPOCH; i < n; ++i) {
         eta[i] = (double) cnt[i]/T;
+
+        Q[i] = 0;
+        cnt[i] = 0;
     }
 }
 
 void Lsolver::computeStationarityState() {
+    omp_set_num_threads(N_THREADS);
+    std::cerr << N_THREADS << '\n';
+
     // Can start with any big value, but beta < beta* is below 1
     beta = 1.28;
     eta.resize(n);
+
+    Q.resize(n, 0);
+    cnt.resize(n, 0);
     do {
         beta /= 2;
         estimateEta();
@@ -128,12 +179,14 @@ void Lsolver::computeStationarityState() {
 
 void Lsolver::computeCanonicalSolution(std::vector<double>& x) {
     x.resize(n);
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         x[i] = (-b_sink/beta) * (eta[i]/d[i]);
     }
 
     // centering for canonical solution
     auto avg_x = sum(x)/n;
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         x[i] -= avg_x;
     }

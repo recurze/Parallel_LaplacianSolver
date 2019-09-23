@@ -1,12 +1,16 @@
 #!/bin/bash
 
-make -j -k -s
-for i in 100 200 400 800
+for p in 2 4 8 16
 do
-    if [ ! -f $i ]; then
-        ./testgen.py $i
-    fi
+    make clean
+    make np=$p -j -k
+    for i in 1000 2000 5000 7000 10000
+    do
+        if [ ! -f $i.inp ]; then
+            python3 testgen.py $i
+        fi
 
-    ./main $i.inp $i.out 2>$i.err;
-    ./checkSolution.py $i.inp $i.out
+        ./main $i.inp $i.out
+        python3 checkSolution.py $i.inp $i.out
+    done
 done

@@ -15,6 +15,7 @@ Console output:
 
 import sys
 import time
+import os.path
 import numpy as np
 
 def readInputFile(ifname):
@@ -51,18 +52,29 @@ def readOutputFile(ofname):
 def align(x, x_hat):
     return x - np.min(x), x_hat - np.min(x_hat)
 
+
+def writeToFile(afname, x):
+    n = int(afname.split('.')[0])
+    with open(afname, 'w') as f:
+        for i in range(n):
+            print(x[i], end = " " if i < n - 1 else '', file = f)
+
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
 
     ifname = sys.argv[1]
-    A, b = readInputFile(ifname)
-    x = computeSolution(A, b)
+    afname = ifname.replace('inp', 'ans')
+    if os.path.isfile(afname):
+        x = readOutputFile(afname)
+    else:
+        A, b = readInputFile(ifname)
+        x = computeSolution(A, b)
+        writeToFile(afname, x)
 
     ofname = sys.argv[2]
     x_hat = readOutputFile(ofname)
 
-
     x, x_hat = align(x, x_hat)
-    #print(x)
-    #print(x_hat)
-    print("Rel error: ", np.linalg.norm(x_hat - x)/np.linalg.norm(x))
+    diff = np.absolute(x - x_hat)
+    print("Rel error: ", np.linalg.norm(diff)/np.linalg.norm(x),
+            file=sys.stderr)
