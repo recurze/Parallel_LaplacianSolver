@@ -9,12 +9,12 @@
 #include <iostream>
 #include <functional>
 
-void in(const char *fname, Graph **g, std::vector<double>& b);
+void in(const char *fname, Graph **g, std::vector<double>& b, char type);
 void out(const char *fname, const std::vector<double>& x);
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        std::cerr << "Usage:\n ./main <input_filename> <output_filename>\n";
+    if (argc != 4) {
+        std::cerr << "Usage:\n ./main <input_filename> <output_filename> 'm'/'e'\n";
         exit(0);
     }
 
@@ -22,7 +22,8 @@ int main(int argc, char **argv) {
     std::vector<double> b;
     char *ifname = argv[1];
 
-    in(ifname, &g, b);
+    char type = argv[3][0];
+    in(ifname, &g, b, type);
 
     std::vector<double> x;
     Lsolver(g, b).solve(x);
@@ -110,7 +111,7 @@ void checkValidb(int n, const std::vector<double>& b) {
     assert(fabs(sum(b)) < EPS);
 }
 
-void in(const char *fname, Graph **g, std::vector<double>& b) {
+void in(const char *fname, Graph **g, std::vector<double>& b, char type) {
     std::ifstream infile(fname);
 
     int n;
@@ -118,12 +119,28 @@ void in(const char *fname, Graph **g, std::vector<double>& b) {
     assert(n > 0);
 
     std::vector< std::vector<double> > A(n);
-    for (int i = 0; i < n; ++i) {
-        A[i].resize(n);
-        for (int j = 0; j < n; ++j) {
-            infile >> A[i][j];
+    for (int i = 0; i < n; ++i) A[i].resize(n);
+
+    if (type == 'm') {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                infile >> A[i][j];
+            }
+        }
+    } else {
+        int m;
+        infile >> m;
+        for (int i = 0; i < m; ++i) {
+            int u, v;
+            double w;
+            infile >> u >> v >> w;
+            if (u != v) {
+                A[u - 1][v - 1] += w;
+                A[v - 1][u - 1] += w;
+            }
         }
     }
+
     checkValidGraph(A);
     *g = new Graph(A);
 

@@ -18,16 +18,27 @@ import time
 import os.path
 import numpy as np
 
-def readInputFile(ifname):
+def readInputFile(ifname, t):
     with open(ifname) as f:
         content = [x.strip() for x in f.readlines()]
 
-        n = int(content[0])
-        A = []
-        for i in range(n):
-            A.append([float(x) for x in content[i + 1].split()])
-        b = [float(x) for x in content[n + 1].split()]
-
+        print(t)
+        if t == 'm':
+            n = int(content[0])
+            A = []
+            for i in range(n):
+                A.append([float(x) for x in content[i + 1].split()])
+            b = [float(x) for x in content[n + 1].split()]
+        else:
+            n, m = [int(x) for x in content[0].split()]
+            A = [[0 for j in range(n)] for i in range(n)]
+            for i in range(m):
+                u, v, w = content[i + 1].split()
+                u, v, w = int(u)-1, int(v)-1, float(w)
+                if u != v:
+                    A[u][v] += w
+                    A[v][u] += w
+            b = [float(x) for x in content[m + 1].split()]
         return A, b
 
 def computeLaplacian(A):
@@ -64,10 +75,12 @@ if __name__ == "__main__":
 
     ifname = sys.argv[1]
     afname = ifname.replace('inp', 'ans')
+    print(afname)
     if os.path.isfile(afname):
         x = readOutputFile(afname)
     else:
-        A, b = readInputFile(ifname)
+        t = sys.argv[3]
+        A, b = readInputFile(ifname, t)
         x = computeSolution(A, b)
         writeToFile(afname, x)
 
