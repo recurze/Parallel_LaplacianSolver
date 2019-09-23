@@ -1,6 +1,8 @@
 #include "graph.h"
 #include "lsolver.h"
 
+#include <omp.h>
+
 #include <cmath>
 #include <vector>
 #include <cassert>
@@ -11,6 +13,8 @@
 
 void in(const char *fname, Graph **g, std::vector<double>& b, char type);
 void out(const char *fname, const std::vector<double>& x);
+void computeRelError(
+        Graph* g, const std::vector<double>& b, const std::vector<double>& x);
 
 int main(int argc, char **argv) {
     if (argc != 4) {
@@ -28,10 +32,12 @@ int main(int argc, char **argv) {
     std::vector<double> x;
     Lsolver(g, b).solve(x);
 
+    computeRelError(g, b, x);
     delete g; g = NULL;
 
     char *ofname = argv[2];
     out(ofname, x);
+
 
     return 0;
 }
@@ -158,3 +164,30 @@ void out(const char *fname, const std::vector<double>& x) {
     }
     outfile << '\n';
 }
+
+void computeRelError(
+        Graph* g, const std::vector<double>& b, const std::vector<double>& x) {
+
+    auto n = g->getNumVertex();
+    auto D = g->getDegreeMatrix();
+    auto P = g->getTransitionMatrix();
+
+    std::vector<double> b_hat(n);
+
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+        double s = -x[i];
+        for (int j = 0; j < n; ++j) {
+            s += P[i][j]*x[j];
+        }
+        b_hat[i] = -s*D[i];
+    }
+
+    double num = 0, den = 0;
+    for (int i = 0; i < n; ++i) {
+        num += (b_hat[i] - b[i])*(b_hat[i] - b[i]);
+        den += b[i] * b[i];
+    }
+    std::cerr << "Rel Error: " << num/den << '\n';
+}
+

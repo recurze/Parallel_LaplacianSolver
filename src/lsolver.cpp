@@ -185,9 +185,9 @@ void Lsolver::computeCanonicalSolution(std::vector<double>& x) {
     }
 
     // centering for canonical solution
-    auto avg_x = sum(x)/n;
-#pragma omp parallel for
-    for (int i = 0; i < n; ++i) {
-        x[i] -= avg_x;
-    }
+    //auto avg_x = sum(x)/n;
+//#pragma omp parallel for
+    //for (int i = 0; i < n; ++i) {
+    //    x[i] -= avg_x;
+    //}
 }
