@@ -8,11 +8,20 @@
 
 class Lsolver {
 public:
-    Lsolver(const Graph *g);
-    Lsolver(const Graph *g, const std::vector<double>& b);
+    Lsolver(const Graph& g) {
+        initGraph(g);
+    }
 
-    void solve(std::vector<double>& x);
-    void solve(const std::vector<double>& b, std::vector<double>& x);
+    Lsolver(const Graph& g, const std::vector<double>& b) {
+        initGraph(g);
+        computeJ(b);
+    }
+
+    std::vector<double> solve();
+    std::vector<double> solve(const std::vector<double>& b) {
+        computeJ(b);
+        return solve();
+    }
 private:
     int n;
 
@@ -26,16 +35,9 @@ private:
     std::vector<int> Q;
     std::vector<int> cnt;
 
-    std::vector< std::vector<double> > P;
-
     std::vector<Sampler> sampler;
 
-    const double k = 0.1;
-    const double e1 = 0.1;
-    const double e2 = 0.1;
-
-    void initGraph(const Graph *g);
-
+    void initGraph(const Graph& g);
     void computeJ(const std::vector<double>& b);
 
     void computeStationarityState();
@@ -45,7 +47,7 @@ private:
     void parallel();
     void estimateEta();
 
-    void computeCanonicalSolution(std::vector<double>& x);
+    std::vector<double> computeX();
 };
 
 #endif

@@ -1,18 +1,24 @@
 #include "sampler.h"
 
-Sampler::Sampler(const std::vector<double>& p) {
+Sampler::Sampler(const std::vector< std::pair<int, double> >& p) {
     n = (int) p.size();
-    prob.resize(n);
-    alias.resize(n);
-    init(p);
+
+    objects.resize(n);
+    std::vector<double> weights(n);
+    for (int i = 0; i < n; ++i) {
+        objects[i] = p[i].first;
+        weights[i] = p[i].second;
+    }
+
+    init(weights);
 }
 
-void Sampler::init(const std::vector<double>& p) {
+void Sampler::init(std::vector<double>& P) {
+    prob.resize(n);
+    alias.resize(n);
 
     std::vector<int> small; small.reserve(n);
     std::vector<int> large; large.reserve(n);
-
-    auto P = p;
 
     for (int i = 0; i < n; ++i) {
         P[i] *= n;
@@ -42,9 +48,4 @@ void Sampler::init(const std::vector<double>& p) {
     for (auto &i: large) prob[i] = 1;
     for (auto &i: small) prob[i] = 1;
 
-}
-
-int Sampler::generate() {
-    int col = (int) (rng.random_double()*n);
-    return (rng.random_double() < prob[col]) ? col : alias[col];
 }

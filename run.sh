@@ -1,9 +1,9 @@
 #!/bin/bash
 
-for p in 2 4 8 16
+for p in 2 4 8
 do
     make clean
-    make np=$p -j -k
+    make np=$p -kj
     for i in 1000 2000 5000 7000 10000
     do
         if [ ! -f $i.inp ]; then
