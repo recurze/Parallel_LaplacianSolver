@@ -15,12 +15,13 @@ public:
         int ind = (random_double < prob[col]) ? col : alias[col];
         return objects[ind];
     }
+
 private:
     int n;
     std::vector<int> objects;
 
+    std::vector<int> alias;
     std::vector<double> prob;
-    std::vector<double> alias;
 
     void init(std::vector<double>& p);
 };

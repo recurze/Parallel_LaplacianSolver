@@ -47,5 +47,4 @@ void Sampler::init(std::vector<double>& P) {
 
     for (auto &i: large) prob[i] = 1;
     for (auto &i: small) prob[i] = 1;
-
 }

@@ -24,13 +24,14 @@ void Lsolver::initGraph(const Graph& g) {
     n = g.getNumVertex();
     d = g.getDegreeMatrix();
 
+    adj.resize(n);
     sampler.reserve(n);
     for (int i = 0; i < n; ++i) {
-        auto v(g.getNeighbors(i));
-        for (auto& j: v) {
+        adj[i] = g.getNeighbors(i);
+        for (auto& j: adj[i]) {
             j.second /= d[i];
         }
-        sampler.push_back(Sampler(v));
+        sampler.push_back(Sampler(adj[i]));
     }
 }
 
@@ -61,44 +62,23 @@ inline bool trueWithProbability(double p) {
     return random_double <= p;
 }
 
-void Lsolver::step() {
-    parallel();
-    //serial();
-}
-
 #ifndef N_THREADS
 #define N_THREADS 16
 #endif
 
-void Lsolver::parallel() {
-    std::vector<int> inQ[N_THREADS];
-
-#pragma omp parallel for
-    for (int i = 0; i < N_THREADS; ++i) {
-        inQ[i].resize(n, 0);
-    }
-
-#pragma omp parallel for
-    for (int i = 0; i < n - 1; ++i) {
-        Q[i] += trueWithProbability(beta * J[i]);
-        for (int k = 3; Q[i] and k; --k) {
-            --Q[i];
-            ++cnt[i];
-            ++inQ[omp_get_thread_num()][sampler[i].generate()];
-        }
-    }
-
-#pragma omp parallel for
-    for (int i = 0; i < n; ++i) {
-        int x = 0;
-        for (int p = 0; p < N_THREADS; ++p) {
-            x += inQ[p][i];
-        }
-        Q[i] += x;
-    }
-}
-
 void Lsolver::serial() {
+    //std::vector<double> inQ(n, 0);
+    //for (int i = 0; i < n - 1; ++i) {
+    //    for (const auto& j: adj[i]) {
+    //        inQ[j.first] += Q[i] * j.second;
+    //    }
+    //}
+    //for (int i = 0; i < n - 1; ++i) {
+    //    Q[i] = inQ[i] + beta*J[i];
+    //    cnt[i] += Q[i];
+    //}
+    //Q[n - 1] += inQ[n - 1];
+
     std::vector<int> inQ(n, 0);
     for (int i = 0; i < n - 1; ++i) {
         Q[i] += trueWithProbability(beta * J[i]);
@@ -108,7 +88,6 @@ void Lsolver::serial() {
             ++inQ[sampler[i].generate()];
         }
     }
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         Q[i] += inQ[i];
     }
@@ -121,18 +100,44 @@ const int LENGTH_OF_EPOCH = 1500;
 void Lsolver::estimateEta() {
     int epoch = 0;
     double oldC = 0, newC = 0;
+
+    std::vector< std::vector<int> > inQ(N_THREADS, std::vector<int>(n, 0));
     do {
         ++epoch;
         oldC = newC;
-        for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
-            step();
+#pragma omp parallel
+        {
+            auto id = omp_get_thread_num();
+            for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
+
+#pragma omp for
+                for (int i = 0; i < n - 1; ++i) {
+                    Q[i] += trueWithProbability(beta * J[i]);
+                    for (int k = 3; Q[i] > 0 and k; --k) {
+                        --Q[i];
+                        ++cnt[i];
+                        ++inQ[id][sampler[i].generate()];
+                    }
+                }
+
+#pragma omp for
+                for (int i = 0; i < n; ++i) {
+                    int x = 0;
+                    for (int p = 0; p < N_THREADS; ++p) {
+                        x += inQ[p][i];
+                        inQ[p][i] = 0;
+                    }
+                    Q[i] += x;
+                }
+
+            }
+
         }
         newC = (double) Q[n - 1]/(1 + sum(Q));
         //std::cerr << newC << '\n';
     } while (fabs(oldC - newC) > EPS and epoch < MAX_EPOCHS);
 
     int T = epoch * LENGTH_OF_EPOCH;
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         eta[i] = (double) cnt[i]/T;
 

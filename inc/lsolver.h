@@ -29,6 +29,8 @@ private:
     std::vector<double> J;
     std::vector<double> eta;
 
+    std::vector< std::vector< std::pair<int, double> > > adj;
+
     double beta;
     double b_sink;
 
@@ -42,9 +44,7 @@ private:
 
     void computeStationarityState();
 
-    void step();
     void serial();
-    void parallel();
     void estimateEta();
 
     std::vector<double> computeX();
