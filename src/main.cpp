@@ -51,6 +51,7 @@ bool isConnected(const Graph& g) {
     dfs(0);
     for (int i = 0; i < n; ++i) {
         if (not visited[i]) {
+            std::cerr << i << " is not reachable from 0\n";
             return false;
         }
     }

@@ -9,7 +9,7 @@ SOURCES := $(wildcard ${SDIR}/*.cpp)
 OBJECTS := $(patsubst $(SDIR)/%, $(ODIR)/%, $(SOURCES:.cpp=.o))
 
 np=4
-CFLAGS := -std=c++14 -g -Wall -Ofast -fopenmp -DN_THREADS=${np}
+CFLAGS := -std=c++17 -g -Wall -Ofast -fopenmp -DN_THREADS=${np}
 
 INC := -I $(IDIR)
 
