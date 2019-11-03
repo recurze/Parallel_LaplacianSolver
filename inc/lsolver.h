@@ -45,9 +45,8 @@ private:
     void initGraph(const Graph& g);
     void computeJ(const std::vector<double>& b);
 
-    void p1();
-    void p2();
-    void partitionGraph();
+    void random_partition();
+    void partitionGraph() { random_partition(); }
 
     void computeStationarityState();
 

@@ -4,8 +4,9 @@ for p in 4
 do
     make clean
     make np=$p -kj
-    for i in 4941 10680 23166 #34761 77360 154908
-    #for i in 2000 5000 7000 10000 20000 30000
+    #for i in 4941 10680 #23166 #34761 77360 154908
+    for i in 2000 5000 7000 10000 #20000 30000
+    #for i in 5000 8000 15000
     do
         cp tests/$i.inp .
         cp ans/$i.ans .

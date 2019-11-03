@@ -57,9 +57,9 @@ def generate_undirectedWeightedConnectedGraph(n, m):
     n_edges = add_random_edges(m - n + 1)
     return A, n_edges + n - 1
 
-minb, maxb = 0, 10
+minb, maxb = 0, 1
 def generate_randomb(n):
-    b = [random.uniform(minb, maxb) for _ in range(n - 1)]
+    b = [random.randint(minb, maxb) for _ in range(n - 1)]
     b.append(-sum(b))
     return b
 
@@ -74,11 +74,11 @@ def writeToFile(n, m, A, b):
             print(b[i], end = " ", file = f)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Example Usage: ./testgen.py 10")
-        exit(0)
     n = int(sys.argv[1])
-    m = random.randint(n - 1, n*(n - 1)//2)
+    if len(sys.argv) == 3:
+        m = int(n * float(sys.argv[2]))
+    else:
+        m = random.randint(n - 1, n*(n - 1)//2)
     A, m = generate_undirectedWeightedConnectedGraph(n, m)
     b = generate_randomb(n)
 

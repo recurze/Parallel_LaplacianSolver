@@ -21,7 +21,7 @@ inline T sum(const std::vector<T>& a) {
     return std::accumulate(a.begin(), a.end(), (T) 0);
 }
 
-void Lsolver::p1() {
+void Lsolver::random_partition() {
 #pragma omp parallel
     {
         auto id = omp_get_thread_num();
@@ -32,40 +32,6 @@ void Lsolver::p1() {
             partition[id].push_back(i);
         }
     }
-}
-
-void Lsolver::p2() {
-    std::vector<bool> visited(n, false);
-    std::vector<int> a; a.reserve(n - 1);
-    auto bfs = [&]() {
-        std::queue<int> q; q.push(0);
-        visited[0] = true;
-        while (not q.empty()) {
-            int u = q.front(); q.pop();
-            if (u != n - 1) a.push_back(u);
-            for (auto [v, w]: adj[u]) {
-                if (not visited[v]) {
-                    q.push(v);
-                    visited[v] = true;
-                }
-            }
-        }
-    }; bfs();
-
-#pragma omp parallel
-    {
-        auto id = omp_get_thread_num();
-        partition[id].reserve(n/N_THREADS);
-
-#pragma omp for
-        for (int i = 0; i < n - 1; ++i) {
-            partition[id].push_back(a[i]);
-        }
-    }
-}
-
-void Lsolver::partitionGraph() {
-    p2();
 }
 
 void Lsolver::initGraph(const Graph& g) {
@@ -117,33 +83,95 @@ inline bool trueWithProbability(double p) {
 #endif
 
 #define LENGTH_OF_EPOCH std::max(n, 2000)
+
+//void Lsolver::parallel() {
+//    std::vector<int> inQ[N_THREADS];
+//#pragma omp parallel
+//    {
+//        auto id = omp_get_thread_num();
+//        inQ[id].resize(n, 0);
+//        for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
+//
+//#pragma omp for
+//            for (int i = 0; i < n - 1; ++i) {
+//                Q[i] += trueWithProbability(beta * J[i]);
+//                for (int cap = std::max(1, Q[i]/2); Q[i] > 0 and cap; --cap) {
+//                    --Q[i];
+//                    ++cnt[i];
+//                    ++inQ[id][sampler[i].generate()];
+//                }
+//            }
+//
+//#pragma omp for
+//            for (int i = 0; i < n; ++i) {
+//                int x = 0;
+//                for (int p = 0; p < N_THREADS; ++p) {
+//                    x += inQ[p][i];
+//                    inQ[p][i] = 0;
+//                }
+//                Q[i] += x;
+//            }
+//
+//        }
+//    }
+//}
+
+#define K 62
 void Lsolver::parallel() {
-    std::vector< std::vector<int> > inQ(N_THREADS, std::vector<int>(n, 0));
+    std::vector<int> occ(n, 0);
+
+    std::vector<int> inQ[N_THREADS];
+    std::vector<long long> flag[N_THREADS];
+
+    std::vector<int> count(n, 0);
+    std::vector<int> budget(n, 1);
 #pragma omp parallel
     {
-        auto id = omp_get_thread_num();
+        int id = omp_get_thread_num();
+        inQ[id].resize(n, 0);
+        flag[id].resize(n, 0);
+
         for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
 
 #pragma omp for
             for (int i = 0; i < n - 1; ++i) {
                 Q[i] += trueWithProbability(beta * J[i]);
-                for (int k = 3; Q[i] > 0 and k; --k) {
+                cnt[i] += occ[i];
+                if (Q[i]) {
                     --Q[i];
-                    ++cnt[i];
-                    ++inQ[id][sampler[i].generate()];
+                    int j = i;
+                    for (int k = 0; k < K and j != n - 1 and budget[j]; ++k) {
+                        flag[id][j] |= (1LL << k);
+//#pragma omp atomic
+//                        --budget[j];
+                        ++count[j];
+                        j = sampler[j].generate();
+                    }
+                    ++inQ[id][j];
                 }
+            }
+
+#pragma omp single
+            {
+                std::cerr << *std::max_element(count.begin(), count.end()) << '\n';
             }
 
 #pragma omp for
             for (int i = 0; i < n; ++i) {
                 int x = 0;
+                long long b = 0;
                 for (int p = 0; p < N_THREADS; ++p) {
                     x += inQ[p][i];
                     inQ[p][i] = 0;
-                }
-                Q[i] += x;
-            }
 
+                    b |= flag[p][i];
+                    flag[p][i] = 0;
+                }
+                occ[i] = __builtin_popcountll(b);
+                count[i] = 0;
+                Q[i] += x;
+                budget[i] = 1;
+            }
         }
     }
 }
@@ -157,7 +185,7 @@ void Lsolver::parallel_partitioned() {
 #pragma omp barrier
             for (int i: partition[id]) {
                 Q[i] += trueWithProbability(beta * J[i]);
-                for (int k = 3; Q[i] and k; --k) {
+                for (int cap = std::max(1, Q[i]/2); Q[i] > 0 and cap; --cap) {
                     --Q[i];
                     ++cnt[i];
 #pragma omp atomic
@@ -181,23 +209,11 @@ void Lsolver::parallel_partitioned() {
 }
 
 void Lsolver::serial() {
-    //std::vector<double> inQ(n, 0);
-    //for (int i = 0; i < n - 1; ++i) {
-    //    for (const auto& j: adj[i]) {
-    //        inQ[j.first] += Q[i] * j.second;
-    //    }
-    //}
-    //for (int i = 0; i < n - 1; ++i) {
-    //    Q[i] = inQ[i] + beta*J[i];
-    //    cnt[i] += Q[i];
-    //}
-    //Q[n - 1] += inQ[n - 1];
-
     std::vector<int> inQ(n, 0);
     for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
         for (int i = 0; i < n - 1; ++i) {
             Q[i] += trueWithProbability(beta * J[i]);
-            for (int k = 3; Q[i] and k; --k) {
+            for (int cap = std::max(1, Q[i]/2); Q[i] > 0 and cap; --cap) {
                 --Q[i];
                 ++cnt[i];
                 ++inQ[sampler[i].generate()];
@@ -211,12 +227,12 @@ void Lsolver::serial() {
 }
 
 const double EPS = 1e-3;
-const int MIN_EPOCHS = 10;
+const int MIN_EPOCHS = 3;
 const int MAX_EPOCHS = 100;
 
 double Lsolver::estimateEta(double lastC = 0) {
     int epoch = 0;
-    double oldC = 0, newC = 0;
+    double newC = 0;
 
     while (epoch < MIN_EPOCHS and newC < 0.8) {
         ++epoch;
@@ -224,25 +240,22 @@ double Lsolver::estimateEta(double lastC = 0) {
         newC = (double) Q[n - 1]/(1 + sum(Q));
     }
 
-    do {
-        ++epoch;
+    for (int thres = 0; thres < 3 and epoch < MAX_EPOCHS; ++epoch) {
+        auto oldC = newC;
 
-        oldC = newC;
         parallel();
         newC = (double) Q[n - 1]/(1 + sum(Q));
 
-        std::cerr << "C: " << newC << ' '
-                  << "Sunk: " << Q[n - 1]
-                  << '\n';
-        if (beta > 0.001 and fabs(oldC - newC) < EPS and newC > lastC)
-            break;
-    } while (epoch < MAX_EPOCHS);
+        std::cerr << "C: " << newC << ';' << "Sunk: " << Q[n - 1] << '\n';
+
+        if (beta > 0.001 and fabs(oldC - newC) < EPS) break;
+        thres += (newC > 0.90);
+    }
     std::cerr << "Epochs: " << epoch << '\n';
 
     int T = epoch * LENGTH_OF_EPOCH;
     for (int i = 0; i < n; ++i) {
         eta[i] = (double) cnt[i]/T;
-
         Q[i] = 0, cnt[i] = 0;
     }
     return newC;
@@ -262,7 +275,7 @@ void Lsolver::computeStationarityState() {
         beta /= 2;
         std::cerr << "Beta: " << beta << '\n';
         C = estimateEta(C);
-    } while ((C < 0.80 or max(eta) > 0.70) and beta >= 0.0001);
+    } while ((C < 0.85 /*or max(eta) > 0.70*/) and beta >= 0.0001);
 }
 
 std::vector<double> Lsolver::computeX() {
