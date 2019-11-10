@@ -34,25 +34,19 @@ private:
     double beta;
     double b_sink;
 
-
     std::vector<int> Q;
     std::vector<int> cnt;
 
     std::vector<Sampler> sampler;
 
-    std::vector<int> partition[N_THREADS];
-
     void initGraph(const Graph& g);
     void computeJ(const std::vector<double>& b);
-
-    void random_partition();
-    void partitionGraph() { random_partition(); }
 
     void computeStationarityState();
 
     void serial();
-    void parallel();
-    void parallel_partitioned();
+    void pll_v1();
+    void pll_v2();
     double estimateEta(double);
 
     std::vector<double> computeX();
