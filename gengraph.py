@@ -1,26 +1,9 @@
 #!/usr/bin/env python3
 
-'''
-Purpose:
-    Generate undirected positive weighted connected graph of given size
-
-Command line argument:
-    n: integer denoting number of nodes in the graph
-
-Console Output:
-    If not run properly, instructions on usage; else none
-
-File output:
-    filename: n.inp; replace n with integer
-    Contents: n + 2 lines; format as specified in the README
-'''
-
-import sys
 import random
-import numpy as np
-from math import sqrt
+import argparse
 
-minw, maxw = 1, 100
+minw, maxw = 0, 1
 def generate_undirectedWeightedConnectedGraph(n, m):
     assert m >= n - 1 and m <= n*(n - 1)/2
 
@@ -57,30 +40,49 @@ def generate_undirectedWeightedConnectedGraph(n, m):
     n_edges = add_random_edges(m - n + 1)
     return A, n_edges + n - 1
 
-minb, maxb = 0, 1
-def generate_randomb(n):
-    b = [random.randint(minb, maxb) for _ in range(n - 1)]
-    b.append(-sum(b))
-    return b
-
-def writeToFile(n, m, A, b):
-    ifname = str(n) + '.inp'
-    with open(ifname, 'w') as f:
+def writeToFile(n, m, A, fname):
+    with open(fname, 'w') as f:
         print(n, m, file=f)
         for i in range(n):
             for j in sorted(A[i]):
                 print(i + 1, j + 1, A[i][j], file = f)
-        for i in range(n):
-            print(b[i], end = " ", file = f)
 
 if __name__ == "__main__":
-    n = int(sys.argv[1])
-    if len(sys.argv) == 3:
-        m = int(n * float(sys.argv[2]))
+    parser = argparse.ArgumentParser(
+            description=
+            'Generate positive weighted undirected connected graph')
+
+    parser.add_argument(
+            'size',
+            type=int,
+            help='Number of vertices in the graph')
+
+    parser.add_argument(
+            '--sparsity',
+            type=str,
+            help='Sparseness of graph',
+            nargs='?',
+            choices=['dense', 'sparse'])
+
+    parser.add_argument(
+            '--output',
+            type=str,
+            help='Output file name',
+            default='g$size.inp')
+
+    args = parser.parse_args()
+
+    n = args.size
+    if args.sparsity == 'sparse':
+        m = int(n * random.uniform(1, 10))
     else:
         m = random.randint(n - 1, n*(n - 1)//2)
-    A, m = generate_undirectedWeightedConnectedGraph(n, m)
-    b = generate_randomb(n)
 
-    writeToFile(n, m, A, b)
+    A, m = generate_undirectedWeightedConnectedGraph(n, m)
+
+    ofname = args.output
+    if ofname == 'g$size.inp':
+        ofname = 'g' + str(n) + '.inp'
+
+    writeToFile(n, m, A, ofname)
 

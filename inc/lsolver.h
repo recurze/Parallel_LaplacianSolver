@@ -22,8 +22,11 @@ public:
         computeJ(b);
         return solve();
     }
+
+    std::vector<double> solve_becchetti();
 private:
     int n;
+    int nsources;
 
     std::vector<double> d;
     std::vector<double> J;
@@ -43,6 +46,9 @@ private:
     void computeJ(const std::vector<double>& b);
 
     void computeStationarityState();
+
+    void bechetti_v1();
+    void bechetti_v2();
 
     void serial();
     void pll_v1();

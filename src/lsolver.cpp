@@ -32,6 +32,7 @@ void Lsolver::initGraph(const Graph& g) {
             j.second /= d[i];
         }
         sampler.push_back(Sampler(adj[i]));
+        if (b[i] > 0) ++nsources;
     }
 }
 
@@ -58,6 +59,21 @@ std::vector<double> Lsolver::solve() {
     return x;
 }
 
+std::vector<double> Lsolver::solve_becchetti() {
+    double C = 0;
+    beta = nsources;
+    do {
+        bechetti_v1();
+        C = (double) Q[n - 1]/(1 + sum(Q));
+    } while (C < 0.9);
+
+    std::vector<double> x(n, 0);
+    for (int i = 0; i < n - 1; ++i) {
+        x[i] = (double) Q[i] / (d[i] * beta);
+    }
+    return x;
+}
+
 inline bool trueWithProbability(double p) {
     return random_double <= p;
 }
@@ -75,7 +91,6 @@ void Lsolver::pll_v1() {
         int tid = omp_get_thread_num();
         inQ[tid].resize(n, 0);
         for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
-
 #pragma omp for
             for (int i = 0; i < n - 1; ++i) {
                 Q[i] += trueWithProbability(beta * J[i]);
@@ -132,6 +147,66 @@ void Lsolver::pll_v2() {
                 }
                 Q[i] += x;
                 cnt[i] += b.count();
+            }
+        }
+    }
+}
+
+void Lsolver::bechetti_v1() {
+    std::vector<int> oldQ = Q;
+    std::vector<int> inQ[N_THREADS];
+#pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        inQ[tid].resize(n, 0);
+        for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
+#pragma omp for
+            for (int i = 0; i < n - 1; ++i) {
+                Q[i] += (int) (beta * J[i]);
+                for (int p = 0; p < Q[i]; ++p) {
+                    ++inQ[tid][sampler[i].generate()];
+                }
+            }
+#pragma omp for
+            for (int i = 0; i < n; ++i) {
+                int x = 0;
+                for (int p = 0; p < N_THREADS; ++p) {
+                    x += inQ[p][i], inQ[p][i] = 0;
+                }
+                Q[i] = x;
+            }
+        }
+    }
+}
+
+
+void Lsolver::bechetti_v2() {
+    std::vector<int> oldQ = Q;
+    std::vector<int> inQ[N_THREADS];
+#pragma omp parallel
+    {
+        int tid = omp_get_thread_num();
+        inQ[tid].resize(n, 0);
+        for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
+#pragma omp for
+            for (int i = 0; i < n - 1; ++i) {
+                Q[i] += (int) (beta * J[i]);
+                for (int p = 0; p < Q[i]; ++p) {
+                    int j = i;
+                    for (int k = 0; k < K and j != n - 1; ++k) {
+                        j = sampler[j].generate();
+                    }
+                    ++inQ[tid][j];
+                }
+            }
+
+#pragma omp for
+            for (int i = 0; i < n; ++i) {
+                int x = 0;
+                for (int p = 0; p < N_THREADS; ++p) {
+                    x += inQ[p][i], inQ[p][i] = 0;
+                }
+                Q[i] = x;
             }
         }
     }
@@ -210,9 +285,8 @@ std::vector<double> Lsolver::computeX() {
     return x;
 
     // centering for canonical solution
-    auto avg_x = sum(x)/n;
-#pragma omp parallel for
-    for (int i = 0; i < n; ++i) {
-        x[i] -= avg_x;
-    }
+    //auto avg_x = sum(x)/n;
+    //for (int i = 0; i < n; ++i) {
+    //    x[i] -= avg_x;
+    //}
 }
