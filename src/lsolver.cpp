@@ -105,6 +105,7 @@ std::vector<double> Lsolver::solve_becchetti() {
         //          << (-b_sink/beta) * (Q[0]/d[0]) << ' '
         //          << sum(Q) << '\n';
 
+        // for testing/plotting progress
         Q[n - 1] = 0;
         for (int i = 0; i < n; ++i) {
             x[i] = (-b_sink/beta) * (Q[i]/d[i]);
@@ -112,7 +113,7 @@ std::vector<double> Lsolver::solve_becchetti() {
         }
         std::cerr << '\n';
         if (elapsed_seconds > 60) break;
-    } while (1);
+    } while (1); // replace with time alloted or e < EPS
 
     return x;
 }
@@ -130,6 +131,7 @@ inline int random_round(double p) {
 #define N_THREADS 16
 #endif
 
+// decrease this for becchetti's
 #define LENGTH_OF_EPOCH 5000
 
 void Lsolver::pll_v1() {
@@ -164,6 +166,7 @@ void Lsolver::pll_v1() {
 #define K 64
 void Lsolver::pll_v2() {
     std::vector<int> inQ[N_THREADS];
+    // store the path of the packet as a bitset
     std::vector< std::bitset<K> > via[N_THREADS];
 #pragma omp parallel
     {
@@ -202,6 +205,7 @@ void Lsolver::pll_v2() {
 
 
 
+// classic
 void Lsolver::becchetti_v1() {
     std::vector<int> inQ[N_THREADS];
 #pragma omp parallel
@@ -229,6 +233,7 @@ void Lsolver::becchetti_v1() {
 }
 
 
+// k-step speed up
 void Lsolver::becchetti_v2() {
     std::vector<int> inQ[N_THREADS];
 #pragma omp parallel
@@ -292,6 +297,7 @@ double Lsolver::estimateEta(double lastC = 0) {
         newC = (double) Q[n - 1]/(1 + sum(Q));
     }
 
+    // if thres (newC is greater than 0.90) for more than 3 times stop
     for (int thres = 0; thres < 3 and epoch < MAX_EPOCHS; ++epoch) {
         auto oldC = newC;
 
@@ -309,6 +315,7 @@ double Lsolver::estimateEta(double lastC = 0) {
         Q[i] = 0, cnt[i] = 0;
     }
 
+    // approximately getting back alpha ~= eta (I + P + P^2 ... P^k-1)/k
     for (int k = 1; k < 1; ++k) {
         std::vector<double> tmp(n, 0);
         for (int i = 0; i < n; ++i) {
