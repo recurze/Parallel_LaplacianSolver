@@ -47,8 +47,8 @@ private:
 
     void computeStationarityState();
 
-    void bechetti_v1();
-    void bechetti_v2();
+    void becchetti_v1();
+    void becchetti_v2();
 
     void serial();
     void pll_v1();

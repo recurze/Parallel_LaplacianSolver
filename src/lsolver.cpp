@@ -21,6 +21,25 @@ inline T sum(const std::vector<T>& a) {
     return std::accumulate(a.begin(), a.end(), (T) 0);
 }
 
+template <typename T>
+double norm(const std::vector<T>& a) {
+    double s = 0;
+    for (const auto& i: a) {
+        s += i*i;
+    }
+    return sqrt(s);
+}
+
+template <typename T>
+double err(const std::vector<T>& oldQ, const std::vector<T>& Q) {
+    int n = (int) Q.size();
+    std::vector<T> diff(n);
+    for (int i = 0; i < n; ++i) {
+        diff[i] = oldQ[i] - Q[i];
+    }
+    return norm(diff)/norm(oldQ);
+}
+
 void Lsolver::initGraph(const Graph& g) {
     n = g.getNumVertex();
     d = g.getDegreeMatrix();
@@ -32,11 +51,13 @@ void Lsolver::initGraph(const Graph& g) {
             j.second /= d[i];
         }
         sampler.push_back(Sampler(adj[i]));
-        if (b[i] > 0) ++nsources;
     }
 }
 
 void Lsolver::computeJ(const std::vector<double>& b) {
+    nsources = std::count_if(b.begin(), b.end(),
+            [](const auto& i) { return i > 0; });
+
     b_sink = b.back();
     J.resize(n);
 #pragma omp parallel for
@@ -47,6 +68,8 @@ void Lsolver::computeJ(const std::vector<double>& b) {
 
 std::vector<double> Lsolver::solve() {
     auto start = std::chrono::steady_clock::now();
+
+    omp_set_num_threads(N_THREADS);
 
     computeStationarityState();
     auto x = computeX();
@@ -60,17 +83,37 @@ std::vector<double> Lsolver::solve() {
 }
 
 std::vector<double> Lsolver::solve_becchetti() {
-    double C = 0;
-    beta = nsources;
-    do {
-        bechetti_v1();
-        C = (double) Q[n - 1]/(1 + sum(Q));
-    } while (C < 0.9);
+    omp_set_num_threads(N_THREADS);
 
+    double e = 0;
+    beta = 250;
+
+    std::vector<int> oldQ;
     std::vector<double> x(n, 0);
-    for (int i = 0; i < n - 1; ++i) {
-        x[i] = (double) Q[i] / (d[i] * beta);
-    }
+
+    Q.resize(n, 1);
+    auto start = std::chrono::steady_clock::now();
+    do {
+        oldQ = Q;
+        becchetti_v1();
+        e = err(oldQ, Q);
+        auto finish = std::chrono::steady_clock::now();
+        double elapsed_seconds = std::chrono::duration_cast<
+            std::chrono::duration<double> >(finish - start).count();
+        std::cerr << elapsed_seconds << '\n';
+        //          << e << '\n';
+        //          << (-b_sink/beta) * (Q[0]/d[0]) << ' '
+        //          << sum(Q) << '\n';
+
+        Q[n - 1] = 0;
+        for (int i = 0; i < n; ++i) {
+            x[i] = (-b_sink/beta) * (Q[i]/d[i]);
+            std::cerr << x[i] << ' ';
+        }
+        std::cerr << '\n';
+        if (elapsed_seconds > 60) break;
+    } while (1);
+
     return x;
 }
 
@@ -78,11 +121,16 @@ inline bool trueWithProbability(double p) {
     return random_double <= p;
 }
 
+inline int random_round(double p) {
+    int q = (int) p;
+    return q + trueWithProbability(p - q);
+}
+
 #ifndef N_THREADS
 #define N_THREADS 16
 #endif
 
-#define LENGTH_OF_EPOCH 2000
+#define LENGTH_OF_EPOCH 5000
 
 void Lsolver::pll_v1() {
     std::vector<int> inQ[N_THREADS];
@@ -152,8 +200,9 @@ void Lsolver::pll_v2() {
     }
 }
 
-void Lsolver::bechetti_v1() {
-    std::vector<int> oldQ = Q;
+
+
+void Lsolver::becchetti_v1() {
     std::vector<int> inQ[N_THREADS];
 #pragma omp parallel
     {
@@ -162,13 +211,13 @@ void Lsolver::bechetti_v1() {
         for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
 #pragma omp for
             for (int i = 0; i < n - 1; ++i) {
-                Q[i] += (int) (beta * J[i]);
+                Q[i] += random_round(beta * J[i]);
                 for (int p = 0; p < Q[i]; ++p) {
                     ++inQ[tid][sampler[i].generate()];
                 }
             }
 #pragma omp for
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n - 1; ++i) {
                 int x = 0;
                 for (int p = 0; p < N_THREADS; ++p) {
                     x += inQ[p][i], inQ[p][i] = 0;
@@ -180,8 +229,7 @@ void Lsolver::bechetti_v1() {
 }
 
 
-void Lsolver::bechetti_v2() {
-    std::vector<int> oldQ = Q;
+void Lsolver::becchetti_v2() {
     std::vector<int> inQ[N_THREADS];
 #pragma omp parallel
     {
@@ -190,7 +238,7 @@ void Lsolver::bechetti_v2() {
         for (int t = 0; t < LENGTH_OF_EPOCH; ++t) {
 #pragma omp for
             for (int i = 0; i < n - 1; ++i) {
-                Q[i] += (int) (beta * J[i]);
+                Q[i] += K * random_round(beta * J[i]);
                 for (int p = 0; p < Q[i]; ++p) {
                     int j = i;
                     for (int k = 0; k < K and j != n - 1; ++k) {
@@ -201,7 +249,7 @@ void Lsolver::bechetti_v2() {
             }
 
 #pragma omp for
-            for (int i = 0; i < n; ++i) {
+            for (int i = 0; i < n - 1; ++i) {
                 int x = 0;
                 for (int p = 0; p < N_THREADS; ++p) {
                     x += inQ[p][i], inQ[p][i] = 0;
@@ -240,14 +288,14 @@ double Lsolver::estimateEta(double lastC = 0) {
 
     while (epoch < MIN_EPOCHS and newC < 0.8) {
         ++epoch;
-        pll_v1();
+        pll_v2();
         newC = (double) Q[n - 1]/(1 + sum(Q));
     }
 
     for (int thres = 0; thres < 3 and epoch < MAX_EPOCHS; ++epoch) {
         auto oldC = newC;
 
-        pll_v1();
+        pll_v2();
         newC = (double) Q[n - 1]/(1 + sum(Q));
 
         if (beta > 0.001 and fabs(oldC - newC) < EPS) break;
@@ -255,16 +303,31 @@ double Lsolver::estimateEta(double lastC = 0) {
     }
 
     int T = epoch * LENGTH_OF_EPOCH;
+    std::vector<double> eta0(n);
     for (int i = 0; i < n; ++i) {
-        eta[i] = (double) cnt[i]/T;
+        eta[i] = eta0[i] = (double) cnt[i]/T;
         Q[i] = 0, cnt[i] = 0;
     }
+
+    for (int k = 1; k < 1; ++k) {
+        std::vector<double> tmp(n, 0);
+        for (int i = 0; i < n; ++i) {
+            for (auto& j: adj[i]) {
+                tmp[j.first] += eta[i] * j.second;
+            }
+        }
+        for (int i = 0; i < n; ++i) {
+            eta[i] = tmp[i] + eta0[i];
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        eta[i] /= 1;
+    }
+
     return newC;
 }
 
 void Lsolver::computeStationarityState() {
-    omp_set_num_threads(N_THREADS);
-
     // Can start with any big value, but beta < beta* is below 1
     beta = 0.1;
     double C = 0;
