@@ -113,9 +113,10 @@ to Lx=b
 ---
 
 ## TODO
-* Implement these sequentially first.
-* Parallel implementation for a k-core machine requires graph partioning. How
-  to?
+
+* Write about constant C, and the k-step speed up.
+* Explain results so far.
+* Test case generation and real world test cases
 
 [paper]: https://arxiv.org/abs/1905.04989
 [lapmat]: https://en.wikipedia.org/wiki/Laplacian_matrix#Definition
