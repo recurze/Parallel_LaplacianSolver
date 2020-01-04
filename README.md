@@ -137,5 +137,5 @@ to Lx=b
 [paper]: https://arxiv.org/abs/1905.04989
 [lapmat]: https://en.wikipedia.org/wiki/Laplacian_matrix#Definition
 [stomat]: https://en.wikipedia.org/wiki/Stochastic_matrix#Definition_and_properties
-[konect]: http://konect.uni-koblenz.de/networks]
+[konect]: http://konect.uni-koblenz.de/networks
 [snap]: https://snap.stanford.edu/
