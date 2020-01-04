@@ -44,9 +44,7 @@ if __name__ == "__main__":
     b = generate_b(n, int(n*args.fsources))
 
     ofname = args.output
-    print(ofname)
     if ofname == 'b$size.inp':
         ofname = 'b' + str(n) + '.inp'
-    print(ofname)
 
     writeToFile(b, ofname)

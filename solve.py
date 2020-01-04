@@ -28,15 +28,16 @@ def computeSolutionLstsq(A, b):
 
 def computeSolutionJacobi(A, b):
     n = len(b)
+    d = np.diag([sum(row) for row in A])
     di = np.diag([1/sum(row) for row in A])
     A = np.array(A)
     b = np.array(b)
 
-    x = np.zeros(n)
+    x = np.array([1]*n)
     while 1:
         y = di.dot(A.dot(x) + b)
         d = np.absolute(x - y)
-        e = np.linalg.norm(d)
+        e = np.linalg.norm(d)/np.linalg.norm(x)
         if e < 1e-3: break
         x = y
 
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     ifname = sys.argv[1]
 
     A, b = readInputFile(ifname)
-    #x = computeSolutionLstsq(A, b)
+    #y = computeSolutionLstsq(A, b)
     y = computeSolutionJacobi(A, b)
 
     afname = ifname.replace('inp', 'ans')
