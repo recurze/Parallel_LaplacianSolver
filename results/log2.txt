@@ -1,0 +1,116 @@
+Beta: 0.025
+C: 0.82392 Sunk: 248
+C: 0.851955 Sunk: 305
+C: 0.869458 Sunk: 353
+C: 0.869658 Sunk: 407
+Epochs: 9
+Beta: 0.0125
+C: 0.823077 Sunk: 107
+C: 0.851351 Sunk: 126
+C: 0.844828 Sunk: 147
+C: 0.821782 Sunk: 166
+C: 0.846809 Sunk: 199
+C: 0.8659 Sunk: 226
+C: 0.892857 Sunk: 250
+C: 0.903846 Sunk: 282
+C: 0.920354 Sunk: 312
+C: 0.936813 Sunk: 341
+C: 0.931472 Sunk: 367
+C: 0.935407 Sunk: 391
+C: 0.940909 Sunk: 414
+C: 0.946121 Sunk: 439
+C: 0.945122 Sunk: 465
+Epochs: 19
+Solve Time: 1.73483
+Rel error:  0.06004897486954017
+Beta: 0.025
+C: 0.842825 Sunk: 740
+C: 0.865657 Sunk: 857
+C: 0.86649 Sunk: 980
+Epochs: 9
+Beta: 0.0125
+C: 0.868106 Sunk: 362
+C: 0.854545 Sunk: 423
+C: 0.874113 Sunk: 493
+C: 0.883758 Sunk: 555
+C: 0.917986 Sunk: 638
+C: 0.918667 Sunk: 689
+Epochs: 12
+Solve Time: 7.40935
+Rel error:  0.10079930023992423
+Beta: 0.025
+C: 0.831841 Sunk: 836
+C: 0.85081 Sunk: 998
+C: 0.868852 Sunk: 1166
+C: 0.886394 Sunk: 1342
+C: 0.898067 Sunk: 1533
+C: 0.908894 Sunk: 1676
+C: 0.918651 Sunk: 1852
+C: 0.925537 Sunk: 2026
+C: 0.926177 Sunk: 2183
+Epochs: 14
+Solve Time: 10.9656
+Rel error:  0.12214845939561116
+Beta: 0.025
+C: 0.849202 Sunk: 1543
+C: 0.877907 Sunk: 1812
+C: 0.890464 Sunk: 2073
+C: 0.907336 Sunk: 2350
+C: 0.915068 Sunk: 2575
+C: 0.922775 Sunk: 2820
+C: 0.93019 Sunk: 3078
+C: 0.933652 Sunk: 3321
+C: 0.931503 Sunk: 3563
+C: 0.934117 Sunk: 3814
+C: 0.938968 Sunk: 4077
+C: 0.943396 Sunk: 4350
+C: 0.951139 Sunk: 4594
+Epochs: 19
+Solve Time: 28.1823
+Rel error:  0.043825640773534735
+cp: cannot stat 'ans/20000.ans': No such file or directory
+Beta: 0.025
+C: 0.834906 Sunk: 2478
+C: 0.85494 Sunk: 2994
+C: 0.877158 Sunk: 3506
+C: 0.889714 Sunk: 3953
+C: 0.895225 Sunk: 4443
+C: 0.90864 Sunk: 4943
+C: 0.912112 Sunk: 5407
+C: 0.923796 Sunk: 5928
+C: 0.929886 Sunk: 6419
+C: 0.934633 Sunk: 6906
+C: 0.938794 Sunk: 7393
+C: 0.936941 Sunk: 7860
+C: 0.941276 Sunk: 8383
+C: 0.945596 Sunk: 8899
+C: 0.948264 Sunk: 9421
+C: 0.949444 Sunk: 9897
+C: 0.954237 Sunk: 10405
+Epochs: 22
+Solve Time: 146.913
+cp: cannot stat 'ans/30000.ans': No such file or directory
+Beta: 0.025
+C: 0.867992 Sunk: 4583
+C: 0.888516 Sunk: 5300
+C: 0.888125 Sunk: 5946
+Epochs: 9
+Beta: 0.0125
+C: 0.834642 Sunk: 1807
+C: 0.851954 Sunk: 2158
+C: 0.871733 Sunk: 2535
+C: 0.890865 Sunk: 2906
+C: 0.894521 Sunk: 3265
+C: 0.899405 Sunk: 3630
+C: 0.916401 Sunk: 4023
+C: 0.922253 Sunk: 4389
+C: 0.925825 Sunk: 4743
+C: 0.928248 Sunk: 5123
+C: 0.931726 Sunk: 5486
+C: 0.943804 Sunk: 5895
+C: 0.939371 Sunk: 6244
+C: 0.943986 Sunk: 6640
+C: 0.939532 Sunk: 6992
+C: 0.950013 Sunk: 7412
+Epochs: 21
+Solve Time: 440.526

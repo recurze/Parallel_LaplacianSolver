@@ -1,0 +1,85 @@
+eps = 1e-3
+
+k = 1
+Solve Time: 5.42811
+Rel error:  0.06565383208244338
+Solve Time: 8.53916
+Rel error:  0.08339262290736268
+Solve Time: 39.6499
+Rel error:  0.10866550248713641
+Solve Time: 79.748
+Rel error:  0.1233769540279382
+Solve Time: 176.687
+Rel error:  0.1352444678893763
+
+k = 3
+Solve Time: 2.73644
+Rel error:  0.02139705890839799
+Solve Time: 6.60246
+Rel error:  0.05550762497515672
+Solve Time: 34.6233
+Rel error:  0.07450896308947559
+Solve Time: 67.8463
+Rel error:  0.07881411016590992
+Solve Time: 141.734
+Rel error:  0.09746186077208702
+
+parallel 4
+Solve Time: 1.38978
+Rel error:  0.039463031685033526
+Solve Time: 5.80638
+Rel error:  0.04461755828810672
+Solve Time: 24.8092
+Rel error:  0.07226854179288768
+Solve Time: 38.4991
+Rel error:  0.07892578043626948
+Solve Time: 57.5789
+Rel error:  0.11278409797006844
+
+parallel 8
+Solve Time: 1.48537
+Rel error:  0.03680473273583756
+Solve Time: 4.82883
+Rel error:  0.05571782685254607
+Solve Time: 14.6502
+Rel error:  0.0913909964498736
+Solve Time: 36.0073
+Rel error:  0.08835521138858335
+Solve Time: 54.7501
+Rel error:  0.11695706784711739
+
+p2
+Solve Time: 1.12502
+Rel error:  0.6771232231951589
+Solve Time: 3.39004
+Rel error:  0.061022527039398054
+Solve Time: 21.7819
+Rel error:  0.07338675987945192
+Solve Time: 35.7138
+Rel error:  0.0903836519389166
+Solve Time: 79.6554
+Rel error:  0.10036602069430382
+
+p4
+Solve Time: 2.25006
+Rel error:  0.6713663838850048
+Solve Time: 3.71929
+Rel error:  0.05545941597084146
+Solve Time: 18.8802
+Rel error:  0.06571027033188634
+Solve Time: 24.7162
+Rel error:  0.1064485240465122
+Solve Time: 49.9346
+Rel error:  0.11962371854831638
+
+p8
+Solve Time: 7.91262
+Rel error:  0.6744081715961862
+Solve Time: 8.38994
+Rel error:  0.06969267031144412
+Solve Time: 23.8845
+Rel error:  0.09665517330122653
+Solve Time: 42.0285
+Rel error:  0.10382601481870482
+Solve Time: 81.0221
+Rel error:  0.1180139263089243

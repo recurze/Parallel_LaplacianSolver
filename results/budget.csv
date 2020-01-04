@@ -1,0 +1,21 @@
+Dense graphs
+---
+n, budget=k, budget=infinity
+2000, 0.403959, 0.20053
+5000, 1.85963, 1.26935
+7000, 3.65575, 2.13772
+10000, 7.5311, 5.57
+
+Sparse graphs
+---
+n, budget=k, budget=infinity
+2000, 1.44262, 0.995279
+5000, 2.094, 1.09
+8000, 4.735, 2.176
+15000, 18.2733, 9.589
+
+Real world graphs
+---
+n, budget=k, budget=infinity
+4941, 3.211, 1.502
+10680, 9.12472, 4.65917

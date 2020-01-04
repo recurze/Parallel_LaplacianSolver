@@ -1,0 +1,96 @@
+Beta: 0.025
+C: 0.847059 Sunk: 288
+C: 0.870466 Sunk: 336
+C: 0.873272 Sunk: 379
+C: 0.898969 Sunk: 436
+C: 0.901887 Sunk: 478
+C: 0.916382 Sunk: 537
+C: 0.911491 Sunk: 587
+C: 0.937409 Sunk: 644
+C: 0.940853 Sunk: 684
+C: 0.927573 Sunk: 730
+C: 0.917056 Sunk: 785
+C: 0.922064 Sunk: 840
+C: 0.930785 Sunk: 901
+C: 0.938835 Sunk: 967
+C: 0.947907 Sunk: 1019
+C: 0.954545 Sunk: 1071
+Epochs: 22
+Solve Time: 0.636759
+Rel error:  0.029425144424614826
+Beta: 0.025
+C: 0.853369 Sunk: 646
+C: 0.866513 Sunk: 753
+C: 0.891218 Sunk: 893
+C: 0.888106 Sunk: 1008
+C: 0.897845 Sunk: 1125
+C: 0.885653 Sunk: 1247
+C: 0.91814 Sunk: 1402
+C: 0.92029 Sunk: 1524
+C: 0.935593 Sunk: 1656
+C: 0.947228 Sunk: 1777
+C: 0.941147 Sunk: 1887
+C: 0.936567 Sunk: 2008
+C: 0.949317 Sunk: 2154
+C: 0.952822 Sunk: 2262
+Epochs: 19
+Solve Time: 3.47621
+Rel error:  0.08254899661760376
+Beta: 0.025
+C: 0.873469 Sunk: 1070
+C: 0.886738 Sunk: 1237
+C: 0.890525 Sunk: 1391
+C: 0.892777 Sunk: 1582
+C: 0.897201 Sunk: 1763
+C: 0.923364 Sunk: 1976
+C: 0.918849 Sunk: 2140
+C: 0.939919 Sunk: 2331
+C: 0.946748 Sunk: 2489
+C: 0.937899 Sunk: 2643
+C: 0.939515 Sunk: 2827
+C: 0.942731 Sunk: 2996
+C: 0.950761 Sunk: 3186
+Epochs: 19
+Solve Time: 8.08139
+Rel error:  0.06725295774666315
+Beta: 0.025
+C: 0.863688 Sunk: 1527
+C: 0.86657 Sunk: 1786
+C: 0.890381 Sunk: 2055
+C: 0.897856 Sunk: 2303
+C: 0.911 Sunk: 2559
+C: 0.911293 Sunk: 2784
+Epochs: 12
+Solve Time: 6.33013
+Rel error:  0.05750264259425891
+cp: cannot stat 'ans/20000.ans': No such file or directory
+Beta: 0.025
+C: 0.825941 Sunk: 2700
+C: 0.85801 Sunk: 3251
+C: 0.891671 Sunk: 3811
+C: 0.907647 Sunk: 4285
+C: 0.908936 Sunk: 4801
+C: 0.906632 Sunk: 5263
+C: 0.926701 Sunk: 5803
+C: 0.929656 Sunk: 6304
+C: 0.92864 Sunk: 6780
+C: 0.93654 Sunk: 7320
+C: 0.936929 Sunk: 7799
+Epochs: 16
+Solve Time: 41.8247
+cp: cannot stat 'ans/30000.ans': No such file or directory
+Beta: 0.025
+C: 0.853391 Sunk: 4517
+C: 0.876275 Sunk: 5241
+C: 0.882117 Sunk: 5949
+C: 0.90231 Sunk: 6678
+C: 0.915706 Sunk: 7387
+C: 0.914409 Sunk: 8066
+C: 0.921124 Sunk: 8817
+C: 0.925969 Sunk: 9581
+C: 0.933091 Sunk: 10278
+C: 0.937074 Sunk: 10990
+C: 0.935076 Sunk: 11767
+C: 0.935253 Sunk: 12538
+Epochs: 18
+Solve Time: 98.8493

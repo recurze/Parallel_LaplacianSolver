@@ -1,0 +1,85 @@
+Beta: 0.025
+C: 0.835079 Sunk: 319
+C: 0.863326 Sunk: 379
+C: 0.893082 Sunk: 426
+C: 0.898897 Sunk: 489
+C: 0.918506 Sunk: 541
+C: 0.914197 Sunk: 586
+C: 0.934211 Sunk: 639
+C: 0.933873 Sunk: 692
+Epochs: 14
+Solve Time: 0.816464
+Rel error:  0.05056017143307172
+Beta: 0.025
+C: 0.855989 Sunk: 636
+C: 0.844141 Sunk: 742
+C: 0.876115 Sunk: 884
+C: 0.886165 Sunk: 1012
+C: 0.892211 Sunk: 1134
+C: 0.899291 Sunk: 1268
+C: 0.914977 Sunk: 1399
+C: 0.925091 Sunk: 1519
+C: 0.924115 Sunk: 1644
+Epochs: 14
+Solve Time: 5.41692
+Rel error:  0.06113993151052527
+Beta: 0.025
+C: 0.869166 Sunk: 1136
+C: 0.877454 Sunk: 1296
+C: 0.891041 Sunk: 1472
+C: 0.904285 Sunk: 1625
+C: 0.911464 Sunk: 1781
+C: 0.918186 Sunk: 1964
+C: 0.922117 Sunk: 2143
+C: 0.92498 Sunk: 2318
+C: 0.929154 Sunk: 2505
+C: 0.929289 Sunk: 2681
+Epochs: 16
+Solve Time: 13.3114
+Rel error:  0.03889732510478779
+Beta: 0.025
+C: 0.829914 Sunk: 1254
+C: 0.854048 Sunk: 1498
+C: 0.872593 Sunk: 1767
+C: 0.89281 Sunk: 2024
+C: 0.903831 Sunk: 2265
+C: 0.914193 Sunk: 2525
+C: 0.919563 Sunk: 2778
+C: 0.923946 Sunk: 3025
+C: 0.929835 Sunk: 3260
+C: 0.936 Sunk: 3510
+C: 0.936074 Sunk: 3734
+Epochs: 16
+Solve Time: 25.6321
+Rel error:  0.08653329954782836
+cp: cannot stat 'ans/20000.ans': No such file or directory
+Beta: 0.025
+C: 0.846307 Sunk: 2555
+C: 0.864334 Sunk: 3039
+C: 0.884702 Sunk: 3545
+C: 0.88835 Sunk: 4026
+C: 0.894178 Sunk: 4546
+C: 0.906021 Sunk: 5071
+C: 0.913623 Sunk: 5553
+C: 0.917374 Sunk: 6051
+C: 0.92639 Sunk: 6582
+C: 0.93605 Sunk: 7099
+C: 0.943032 Sunk: 7565
+C: 0.941778 Sunk: 8007
+C: 0.943 Sunk: 8487
+C: 0.945903 Sunk: 9005
+C: 0.945143 Sunk: 9545
+Epochs: 20
+Solve Time: 146.262
+cp: cannot stat 'ans/30000.ans': No such file or directory
+Beta: 0.025
+C: 0.851047 Sunk: 4428
+C: 0.872362 Sunk: 5167
+C: 0.879531 Sunk: 5921
+C: 0.893105 Sunk: 6684
+C: 0.910032 Sunk: 7475
+C: 0.913378 Sunk: 8193
+C: 0.922039 Sunk: 8953
+C: 0.921939 Sunk: 9720
+Epochs: 14
+Solve Time: 240.772
