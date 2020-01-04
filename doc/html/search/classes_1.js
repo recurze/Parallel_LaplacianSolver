@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['lsolver_5',['Lsolver',['../classLsolver.html',1,'']]]
+  ['lsolver',['Lsolver',['../classLsolver.html',1,'']]]
 ];

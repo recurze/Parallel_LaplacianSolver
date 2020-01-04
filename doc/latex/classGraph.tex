@@ -1,39 +1,35 @@
-\hypertarget{classGraph}{}\doxysection{Graph Class Reference}
+\hypertarget{classGraph}{}\section{Graph Class Reference}
 \label{classGraph}\index{Graph@{Graph}}
-\doxysubsection*{Public Member Functions}
+\subsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
 \mbox{\Hypertarget{classGraph_a252af8157a85bbf4564ed11cb545e617}\label{classGraph_a252af8157a85bbf4564ed11cb545e617}} 
 {\bfseries Graph} (int \+\_\+n)
 \item 
-\mbox{\Hypertarget{classGraph_a016581965b6afcbbacae41b6c17ac682}\label{classGraph_a016581965b6afcbbacae41b6c17ac682}} 
-{\bfseries Graph} (int \+\_\+n, double $\ast$$\ast$\+\_\+A)
+\mbox{\Hypertarget{classGraph_ab3163e71e2273e5e2cf4f811f18e8158}\label{classGraph_ab3163e71e2273e5e2cf4f811f18e8158}} 
+void {\bfseries set\+Num\+Vertex} (int \+\_\+n)
 \item 
 \mbox{\Hypertarget{classGraph_abb5e0517e2979c54eebdafc2a9875e8f}\label{classGraph_abb5e0517e2979c54eebdafc2a9875e8f}} 
 int {\bfseries get\+Num\+Vertex} () const
 \item 
-\mbox{\Hypertarget{classGraph_af38caedfdf00373eaef7310252e76e0f}\label{classGraph_af38caedfdf00373eaef7310252e76e0f}} 
-void {\bfseries copy\+Degree\+Matrix} (double $\ast$\+\_\+D) const
+\mbox{\Hypertarget{classGraph_abb506ed914992e475c398e35f4c31ec3}\label{classGraph_abb506ed914992e475c398e35f4c31ec3}} 
+void {\bfseries add\+Edge} (int u, int v, double w)
 \item 
-\mbox{\Hypertarget{classGraph_a3b5acfaae6249c79497a321d6dea2cc9}\label{classGraph_a3b5acfaae6249c79497a321d6dea2cc9}} 
-void {\bfseries copy\+Laplacian\+Matrix} (double $\ast$$\ast$\+\_\+L) const
+\mbox{\Hypertarget{classGraph_a30eacf35eebb405380b60b3737c76f8f}\label{classGraph_a30eacf35eebb405380b60b3737c76f8f}} 
+const std\+::vector$<$ std\+::pair$<$ int, double $>$ $>$ \& {\bfseries get\+Neighbors} (int u) const
 \item 
-\mbox{\Hypertarget{classGraph_aead6f200e914326db8cd442495533ad7}\label{classGraph_aead6f200e914326db8cd442495533ad7}} 
-void {\bfseries copy\+Adjacency\+Matrix} (double $\ast$$\ast$\+\_\+A) const
-\item 
-\mbox{\Hypertarget{classGraph_aa538c80b6488750eb63083a8d7b04bf5}\label{classGraph_aa538c80b6488750eb63083a8d7b04bf5}} 
-void {\bfseries copy\+Transition\+Matrix} (double $\ast$$\ast$\+\_\+P) const
+\mbox{\Hypertarget{classGraph_a56759aee6a32a47808c047716ca14efc}\label{classGraph_a56759aee6a32a47808c047716ca14efc}} 
+const std\+::vector$<$ double $>$ \& {\bfseries get\+Degree\+Matrix} () const
 \end{DoxyCompactItemize}
 
 
-\doxysubsection{Detailed Description}
+\subsection{Detailed Description}
 
 
-Definition at line 4 of file graph.\+h.
+Definition at line 7 of file graph.\+h.
 
 
 
-The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
 \item 
-inc/graph.\+h\item 
-src/graph.\+cpp\end{DoxyCompactItemize}
+inc/graph.\+h\end{DoxyCompactItemize}

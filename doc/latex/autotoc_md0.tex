@@ -1,0 +1,108 @@
+This repository will contain the implementation of the algorithm presented in \href{https://arxiv.org/abs/1905.04989}{\tt this paper}. The paper describes a random walk based method to solve an important class of Laplacian Systems (Lx = b), called \char`\"{}one-\/sink\char`\"{} systems, where exactly one of the coordinates of b is negative.
+
+You are given an undirected positive weighted connected graph G = (V, E, w) with adjacency matrix A\textsubscript{uv} = w\textsubscript{uv}. You are required to solve the system of equations\+: Lx = b where L is the \href{https://en.wikipedia.org/wiki/Laplacian_matrix#Definition}{\tt Laplacian matrix}.
+
+The algorithm works by deriving the canonical solution from the stationary state of the data collection process\+: Packets are generated at each node as an independent Bernoulli process, transmitted to neighbors according to \href{https://en.wikipedia.org/wiki/Stochastic_matrix#Definition_and_properties}{\tt stochastic matrix} where P\textsubscript{uv} is directly propotional to w\textsubscript{uv} and sunk at sink node only. Naturally, it consists of two phases\+: find parameter {$\beta$} such that D\+CP is ergodic and compute the stationary state, compute the canonical solution by choosing an appropriate constant offset.
+
+We have a lower limit for {$\beta$}$\ast$ below which it\textquotesingle{}s ergodic, so we binary search this lower limit. Whenever it\textquotesingle{}s not ergodic, there\textquotesingle{}s one {$\eta$} (queue occupancy probability) which reaches 1, so we simply simulate the D\+CP at each {$\beta$} and check for this condition.
+
+
+\begin{DoxyCode}
+func estimateQueueOccupancyProbability(P, beta, J, T\_mix, T\_samp):
+    We generate and transmit for T\_mix seconds, allowing it to reach
+    stationarity and then count the number of seconds queue is not empty for
+    T\_samp time, to estimate occupancy probability
+begin
+    t := 0
+    Q\_t(u) := 0 for all nodes
+    cnt(u) := 0 for all nodes
+
+    repeat
+        generate packets at all nodes according to Bernoulli(beta J\_u)
+        transmit packets according to stochastic matrix, P
+        increment cnt if queue is not empty and t > t\_mix for all nodes
+        t := t + 1
+    until t <= T\_mix + T\_samp
+
+    report: cnt/T\_samp as the estimate
+end
+
+func computeStationaryState(P, b, t\_hit):
+    We start with beta = 1 and reduce by half everytime we find that it's
+    non-ergodic
+begin
+    T\_mix := 64t\_hit log(1/e1)
+    T\_samp := 4logn/(k^2 e2^2)
+    J := -b/b\_sink
+
+    beta := 1
+    repeat
+        beta := beta/2
+        eta := estimateQueueOccupancyProbability(P, beta, J, T\_mix, T\_samp)
+    until max(eta) < 0.75(1 - e1 - e2)
+
+    report: eta as the stationary state
+end
+\end{DoxyCode}
+
+
+The solution to Lx=b satisfies $<$$<$Lx, 1$>$$>$ = 0 as {$\lambda$}\textsubscript{1} = 0, so we need to have an offset for stationary state such that this holds.
+
+
+\begin{DoxyCode}
+func computeCanonicalSolution(eta, beta, D, b):
+    Shifts the stationary state, eta by z*
+begin
+    z* := -sum of eta(u)/d(u) for all u
+    sum\_d := sum of d(u) for all u
+    x(u) := -b\_sink(eta(u)/d(u) + z*d(u)/sum\_d)/beta
+
+    report: x as the solution to Lx=b
+end
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item Refer to the paper for a detailed analysis and description of the algorithm regarding constants.
+\end{DoxyItemize}
+
+The input will be of the following format
+
+
+\begin{DoxyCode}
+The first line in the file is a single integer n, denoting the number of nodes
+The following n lines will have n space seperated real numbers, the Adjacency
+matrix in row-major format
+The final line will have n space seperated real numbers, the b in Lx=b
+
+A[i][i] = 0
+A[i][j] = A[j][i] >= 0
+b[n] = sum(b[1..n-1])
+\end{DoxyCode}
+
+
+The output should be of the following format\+:
+
+
+\begin{DoxyCode}
+Print one and only line containing n space seperated real numbers, the solution
+to Lx=b
+\end{DoxyCode}
+
+
+
+\begin{DoxyItemize}
+\item To generate testcases\+: {\ttfamily ./testgen.py 100}
+\item To compile the program\+: {\ttfamily make}, from the root directory
+\item To run the program\+: {\ttfamily ./main 100.\+inp 100.\+out} 
+
+
+\end{DoxyItemize}
+
+
+\begin{DoxyItemize}
+\item Write about constant C, and the k-\/step speed up.
+\item Explain results so far.
+\item Test case generation and real world test cases 
+\end{DoxyItemize}

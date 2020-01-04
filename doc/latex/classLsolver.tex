@@ -1,20 +1,29 @@
-\hypertarget{classLsolver}{}\doxysection{Lsolver Class Reference}
+\hypertarget{classLsolver}{}\section{Lsolver Class Reference}
 \label{classLsolver}\index{Lsolver@{Lsolver}}
-\doxysubsection*{Public Member Functions}
+\subsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\Hypertarget{classLsolver_ae042d5b5d1f5535e13928d7ed26cb3e1}\label{classLsolver_ae042d5b5d1f5535e13928d7ed26cb3e1}} 
-{\bfseries Lsolver} (double \+\_\+e1=0.\+05, double \+\_\+e2=0.\+05, double \+\_\+k=0.\+2)
+\mbox{\Hypertarget{classLsolver_a87fe3dd0b3ccb177aff4866f33d4ad2e}\label{classLsolver_a87fe3dd0b3ccb177aff4866f33d4ad2e}} 
+{\bfseries Lsolver} (const \hyperlink{classGraph}{Graph} \&g)
 \item 
-\mbox{\Hypertarget{classLsolver_a3cdd40e36672dd1e0bb098a1d524574e}\label{classLsolver_a3cdd40e36672dd1e0bb098a1d524574e}} 
-void {\bfseries solve} (const \mbox{\hyperlink{classGraph}{Graph}} $\ast$g, const double $\ast$b, double $\ast$$\ast$x)
+\mbox{\Hypertarget{classLsolver_ad821a531324d3905a5e72035c9f61994}\label{classLsolver_ad821a531324d3905a5e72035c9f61994}} 
+{\bfseries Lsolver} (const \hyperlink{classGraph}{Graph} \&g, const std\+::vector$<$ double $>$ \&b)
+\item 
+\mbox{\Hypertarget{classLsolver_aa6b28d7d78ff0e7230ece53676b6061e}\label{classLsolver_aa6b28d7d78ff0e7230ece53676b6061e}} 
+std\+::vector$<$ double $>$ {\bfseries solve} ()
+\item 
+\mbox{\Hypertarget{classLsolver_a842e092b26dd9c98a78265a2ba5c351d}\label{classLsolver_a842e092b26dd9c98a78265a2ba5c351d}} 
+std\+::vector$<$ double $>$ {\bfseries solve} (const std\+::vector$<$ double $>$ \&b)
+\item 
+\mbox{\Hypertarget{classLsolver_a81745754f3025c2b4f3691d61fdfd862}\label{classLsolver_a81745754f3025c2b4f3691d61fdfd862}} 
+std\+::vector$<$ double $>$ {\bfseries solve\+\_\+becchetti} ()
 \end{DoxyCompactItemize}
 
 
-\doxysubsection{Detailed Description}
+\subsection{Detailed Description}
 
 
-Definition at line 6 of file lsolver.\+h.
+Definition at line 9 of file lsolver.\+h.
 
 
 

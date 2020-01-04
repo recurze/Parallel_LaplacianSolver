@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Parallel Laplacian Solver: Graph Class Reference</title>
+<title>Parallel Laplacian Solver: Sampler Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,38 +61,27 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="classGraph-members.html">List of all members</a>  </div>
+<a href="classSampler-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">Graph Class Reference</div>  </div>
+<div class="title">Sampler Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a252af8157a85bbf4564ed11cb545e617"><td class="memItemLeft" align="right" valign="top"><a id="a252af8157a85bbf4564ed11cb545e617"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Graph</b> (int _n)</td></tr>
-<tr class="separator:a252af8157a85bbf4564ed11cb545e617"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3163e71e2273e5e2cf4f811f18e8158"><td class="memItemLeft" align="right" valign="top"><a id="ab3163e71e2273e5e2cf4f811f18e8158"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setNumVertex</b> (int _n)</td></tr>
-<tr class="separator:ab3163e71e2273e5e2cf4f811f18e8158"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb5e0517e2979c54eebdafc2a9875e8f"><td class="memItemLeft" align="right" valign="top"><a id="abb5e0517e2979c54eebdafc2a9875e8f"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>getNumVertex</b> () const</td></tr>
-<tr class="separator:abb5e0517e2979c54eebdafc2a9875e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb506ed914992e475c398e35f4c31ec3"><td class="memItemLeft" align="right" valign="top"><a id="abb506ed914992e475c398e35f4c31ec3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addEdge</b> (int u, int v, double w)</td></tr>
-<tr class="separator:abb506ed914992e475c398e35f4c31ec3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30eacf35eebb405380b60b3737c76f8f"><td class="memItemLeft" align="right" valign="top"><a id="a30eacf35eebb405380b60b3737c76f8f"></a>
-const std::vector&lt; std::pair&lt; int, double &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>getNeighbors</b> (int u) const</td></tr>
-<tr class="separator:a30eacf35eebb405380b60b3737c76f8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56759aee6a32a47808c047716ca14efc"><td class="memItemLeft" align="right" valign="top"><a id="a56759aee6a32a47808c047716ca14efc"></a>
-const std::vector&lt; double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>getDegreeMatrix</b> () const</td></tr>
-<tr class="separator:a56759aee6a32a47808c047716ca14efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7061f0809fa1f9d6449fdbb4326996b2"><td class="memItemLeft" align="right" valign="top"><a id="a7061f0809fa1f9d6449fdbb4326996b2"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Sampler</b> (const std::vector&lt; std::pair&lt; int, double &gt; &gt; &amp;p)</td></tr>
+<tr class="separator:a7061f0809fa1f9d6449fdbb4326996b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77dc797f2e49dcb22d198b6b42d11237"><td class="memItemLeft" align="right" valign="top"><a id="a77dc797f2e49dcb22d198b6b42d11237"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>generate</b> ()</td></tr>
+<tr class="separator:a77dc797f2e49dcb22d198b6b42d11237"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00007">7</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
-<li>inc/<a class="el" href="graph_8h_source.html">graph.h</a></li>
+<p class="definition">Definition at line <a class="el" href="sampler_8h_source.html#l00009">9</a> of file <a class="el" href="sampler_8h_source.html">sampler.h</a>.</p>
+</div><hr/>The documentation for this class was generated from the following files:<ul>
+<li>inc/<a class="el" href="sampler_8h_source.html">sampler.h</a></li>
+<li>src/<a class="el" href="sampler_8cpp_source.html">sampler.cpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
