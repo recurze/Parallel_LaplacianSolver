@@ -2,7 +2,9 @@
 This repository will contain the implementation of the algorithm presented in
 [this paper][paper]. The paper describes a random walk based method to solve an
 important class of Laplacian Systems (Lx = b), called "one-sink" systems,
-where exactly one of the coordinates of b is negative.
+where exactly one of the coordinates of b is negative. The documentation of the
+source code and the results of the expermentation can also be found in this
+repo.
 
 ## Problem Statement
 You are given an undirected positive weighted connected graph G = (V, E, w) with
@@ -81,20 +83,35 @@ end
 * Refer to the paper for a detailed analysis and description of the algorithm
   regarding constants.
 
+## Implemenatation details
+
+* There's a strong correlation between the fraction of packets sunk and the
+  closeness to the stationary state. Thus, the stopping condition is based on
+  this fraction C.
+* More than 1 packet is transmitted at once.
+* `inQ[i][j]` holds the incoming packets to node j coming from thread i
+* The algorithm flounders in case of sparse graphs. The k-step speed up is a try
+  at mitigating this issue.
+* Each packet is moved by more than 1 step at a time; the path is noted and
+  occupancy updated accordingly.
+* `via[i][j][k]` is 1 if packet of thread i has been to node j in step k. This
+  marks the occupancy of the queue of node j at that time step.
 
 ## IO format
 The input will be of the following format
 
 ```
-The first line in the file is a single integer n, denoting the number of nodes
-The following n lines will have n space seperated real numbers, the Adjacency
-matrix in row-major format
-The final line will have n space seperated real numbers, the b in Lx=b
+The first line in the file is two integers - n and m, denoting the number of
+nodes and the number of edges. The following m lines will have three space
+seperated real numbers, the 2 vertices and the weight of the corresponding
+edge. The final line will have n space seperated real numbers, the b in Lx=b.
 
 A[i][i] = 0
 A[i][j] = A[j][i] >= 0
 b[n] = sum(b[1..n-1])
 ```
+
+Real world graphs can be found [here][konect] and [here][snap].
 
 The output should be of the following format:
 
@@ -104,20 +121,21 @@ to Lx=b
 ```
 
 
-## How To run
+## Help?
 
-* To generate testcases: `./testgen.py 100`
-* To compile the program: `make`, from the root directory
-* To run the program: `./main 100.inp 100.out`
+* Run `./gengraph.py -h` for help in generating the graph
+* Run `./genb.py -h` for help in generating the RHS, b
+* Run `cat g100.inp b100.inp > 100.inp` to merge the 2 segments of the input
+* Run `make` from the parent directory to compile
+* Run `./main` for help running the main program
+* Use `run.sh` script to run automated tests
+* `solve.py` uses least square or Jacobi method to compute the solution
+* `compare.py` can be used to compare the output file and the actual answer
 
 ---
-
-## TODO
-
-* Write about constant C, and the k-step speed up.
-* Explain results so far.
-* Test case generation and real world test cases
 
 [paper]: https://arxiv.org/abs/1905.04989
 [lapmat]: https://en.wikipedia.org/wiki/Laplacian_matrix#Definition
 [stomat]: https://en.wikipedia.org/wiki/Stochastic_matrix#Definition_and_properties
+[konect]: http://konect.uni-koblenz.de/networks]
+[snap]: https://snap.stanford.edu/
