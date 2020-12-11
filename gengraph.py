@@ -3,7 +3,7 @@
 import random
 import argparse
 
-minw, maxw = 0, 1
+minw, maxw = 1e-6, 1
 def generate_undirectedWeightedConnectedGraph(n, m):
     assert m >= n - 1 and m <= n*(n - 1)/2
 
